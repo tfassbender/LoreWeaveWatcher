@@ -1,0 +1,53 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+gradle-app.setting
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# IntelliJ / JetBrains — ignore the whole project-settings dir
+.idea/
+.idea_modules/
+*.iml
+*.iws
+*.ipr
+out/
+# CMake / native build dirs created by CLion-style run configs
+cmake-build-*/
+# Plugin droppings that land at the repo root rather than under .idea/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / local
+*.log
+/tmp/
+/local/
+
+# Claude Code local settings
+.claude/settings.local.json
