@@ -67,11 +67,11 @@ Start with (1). Promote to (2) when the drift becomes painful.
 
 **Exit criteria**: launched from `<vault>/.loreweave/lore-weave-watch.jar`, the tool picks `<vault>` as the vault root without any args.
 
-- [ ] Locate the jar at runtime via `WatchMain.class.getProtectionDomain().getCodeSource().getLocation()`.
-- [ ] Default rule: vault root = jar's parent-of-parent (i.e., the dir that contains the `.loreweave/` folder).
-- [ ] Sanity check: the detected root must contain at least one `.md` file. If not, walk upward looking for one.
-- [ ] Override: `--vault <path>` flag for non-standard setups.
-- [ ] Log the detected root on startup so operators can spot misdetection.
+- [x] Locate the jar at runtime via `WatchMain.class.getProtectionDomain().getCodeSource().getLocation()`. _(See `VaultLocator.ownCodeSourceLocation`.)_
+- [x] Default rule: vault root = jar's parent-of-parent (i.e., the dir that contains the `.loreweave/` folder).
+- [x] Sanity check: the detected root must contain at least one `.md` file. If not, walk upward looking for one. _(Recursive `.md` probe skips hidden dirs to match `VaultScanner` semantics; walks upward until a hit, else fails with exit code 3.)_
+- [x] Override: `--vault <path>` flag for non-standard setups.
+- [x] Log the detected root on startup so operators can spot misdetection. _(`Main` prints `vault: <abs-path>` before dispatching to watch/check.)_
 
 ## Phase 4 — HTTP server + JSON API
 
