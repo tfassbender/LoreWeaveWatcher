@@ -30,7 +30,7 @@ public final class Main {
                 yield 0;
             }
             case WATCH -> runWatch(parsed);
-            case CHECK -> runWithVault(parsed, "check mode is not implemented yet (phase 8).");
+            case CHECK -> runCheck(parsed);
             case ERROR -> {
                 System.err.println("error: " + parsed.errorMessage());
                 System.err.println();
@@ -40,16 +40,15 @@ public final class Main {
         };
     }
 
-    private static int runWithVault(Args parsed, String stubMessage) {
+    private static int runCheck(Args parsed) {
+        Path vault;
         try {
-            Path vault = VaultLocator.locate(parsed.vault());
-            System.out.println("vault: " + vault);
-            System.out.println(stubMessage);
-            return 0;
+            vault = VaultLocator.locate(parsed.vault());
         } catch (VaultLocator.VaultDetectionException e) {
             System.err.println("error: " + e.getMessage());
             return 3;
         }
+        return CheckCommand.run(parsed, vault, System.out, System.err);
     }
 
     private static int runWatch(Args parsed) {

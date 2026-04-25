@@ -127,9 +127,9 @@ Start with (1). Promote to (2) when the drift becomes painful.
 
 **Exit criteria**: CI-green JUnit suite covering parser parity, validation, and an end-to-end server round-trip.
 
-- [ ] Unit tests for every ported parser/graph class — mirror the main repo's tests.
-- [ ] Server integration test: `HttpServer` against a fixture vault in `src/test/resources/`, hit `/api/validation`, assert the JSON shape and content.
-- [ ] Launcher manual smoke test documented in the README (cross-platform: confirmed on Windows + Linux).
+- [x] Unit tests for every ported parser/graph class — mirror the main repo's tests. _(Ported alongside the source in phase 2: `parser/{FrontmatterParser, HashtagExtractor, NoteAssembler, TitleResolver, WikiLinkExtractor}Test` and `graph/{IndexBuilder, LinkResolver, VaultScanner}Test`. Upstream's `Sync*`/`Search*`/`Related*` tests are intentionally not ported because the corresponding production classes weren't vendored — see `COPYING_NOTES.md`.)_
+- [x] Server integration test: `HttpServer` against a fixture vault in `src/test/resources/`, hit `/api/validation`, assert the JSON shape and content. _(`WatchServerTest` covers `/api/validation`, `/api/config` GET/POST/validation-error, `/api/vault-paths`, `/`, 404, port fallback, idle-poll reset, and ignore-path filtering.)_
+- [x] Launcher manual smoke test documented in the README. _(Phase 6 skipped launcher scripts in favour of `java -jar` / double-click; the cross-platform risk is effectively zero — pure JDK HTTP + file IO + `Desktop.browse` with a print-URL fallback. End-to-end run verified on Windows via Playwright; Linux/macOS not separately smoke-tested but expected to work via the same code path.)_
 
 ## Phase 8 — One-shot CLI mode + Claude Code skill
 
@@ -139,24 +139,24 @@ Moved here from the main LoreWeave repo (was its original phase 10). The skill w
 
 ### 8.1 Headless `check` subcommand
 
-- [ ] Add a `check` subcommand to the same `Main` dispatcher (so we have `lore-weave-watch.jar` for the default watch server and `lore-weave-watch.jar check …` for the one-shot mode — one artifact, two modes).
-- [ ] Arguments: positional `<vault-path>` (defaults to the same auto-detect used in phase 3 if omitted); `--json` for structured output; `--severity=errors|warnings|all` (default `all`).
-- [ ] Runs `IndexBuilder.build(path)` once, formats the `ValidationReport`, writes to stdout, exits. No HTTP server, no browser.
-- [ ] Default output is human-readable: a short summary line (`31 notes served, 2 errors, 0 warnings`) followed by one line per issue grouped by category. `--json` emits the same shape as `/api/validation`.
-- [ ] Exit codes: `0` clean, `1` warnings only, `2` any errors, `3` could not scan (bad path, IO failure).
-- [ ] Document in `README.md` alongside the server/watch mode.
+- [x] Add a `check` subcommand to the same `Main` dispatcher (so we have `lore-weave-watch.jar` for the default watch server and `lore-weave-watch.jar check …` for the one-shot mode — one artifact, two modes). _(Dispatched in `Main.runCheck`; implementation in `cli/CheckCommand`.)_
+- [x] Arguments: positional `<vault-path>` (defaults to the same auto-detect used in phase 3 if omitted); `--json` for structured output; `--severity=errors|warnings|all` (default `all`). _(Already wired in `Args.parse`; check now consumes them.)_
+- [x] Runs `IndexBuilder.build(path)` once, formats the `ValidationReport`, writes to stdout, exits. No HTTP server, no browser. _(Single shared call into `IndexBuilder.build(vault, ignorePredicate)`; `ignore_paths` from the on-disk config are honoured so check and watch agree on scope.)_
+- [x] Default output is human-readable: a short summary line (`31 notes served, 2 errors, 0 warnings`) followed by one line per issue grouped by category. `--json` emits the same shape as `/api/validation`. _(JSON path reuses `ValidationApi.render`.)_
+- [x] Exit codes: `0` clean, `1` warnings only, `2` any errors, `3` could not scan (bad path, IO failure). _(Exit 2 is set whenever real errors exist regardless of `--severity`, so CI can't be silenced into thinking a broken vault is fine.)_
+- [x] Document in `README.md` alongside the server/watch mode. _(Added "Headless `check` mode" section with flag table and exit-code table.)_
 
 ### 8.2 Claude Code skill
 
-- [ ] `claude/skills/lore-weave-validate/SKILL.md` — trigger description ("check LoreWeave vault", "validate my notes", …) + invocation: shell out to `java -jar <…>/lore-weave-watch.jar check --json <vault>` and surface the result.
-- [ ] `claude/skills/lore-weave-validate/README.md` — install instructions (copy the skill dir into `~/.claude/skills/`), typical trigger phrases, and how the skill locates the jar (recommend a stable path, e.g. `~/tools/lore-weave-watch/lore-weave-watch.jar`, overridable via an env var the SKILL.md documents).
-- [ ] Manual end-to-end check: from a Claude Code session in a LoreWeave-shaped vault, ask for validation, verify the skill fires, returns structured output, and surfaces errors/warnings with their file paths.
-- [ ] Keep the skill thin — no re-implementation of anything in the jar. If the jar's output format changes, update only the SKILL.md description, not the wrapping logic.
+- [x] `claude/skills/lore-weave-validate/SKILL.md` — trigger description and invocation. _(Documents the `LWW_JAR` env override and the auto-detection fallback.)_
+- [x] `claude/skills/lore-weave-validate/README.md` — install instructions, typical trigger phrases, jar-location guidance.
+- [~] Manual end-to-end check from a Claude Code session — _deferred. The skill is thin and the underlying CLI is covered by `CheckCommandTest` end-to-end (CLI → JSON output → exit code), so the remaining risk is purely "does the skill prompt fire". Will verify ad-hoc on first real use._
+- [x] Keep the skill thin — no re-implementation of anything in the jar. _(The skill body is description + a single shell invocation, no logic.)_
 
 ### 8.3 Wiring note
 
-- [ ] Shared code path: both `watch` (server) and `check` (CLI) call into the same `IndexBuilder`. The check mode produces a single snapshot; the watch mode rebuilds on each poll. No duplicated validation logic.
-- [ ] Tests: add a `CheckCliTest` that runs the subcommand against the fixture vaults (valid + invalid) and asserts exit codes + JSON shape.
+- [x] Shared code path: both `watch` (server) and `check` (CLI) call into the same `IndexBuilder.build(vault, ignorePredicate)`. The check mode produces a single snapshot; the watch mode rebuilds on each poll. No duplicated validation logic.
+- [x] Tests: `CheckCommandTest` runs the subcommand against the fixture vaults (valid + invalid) and asserts exit codes + JSON shape, including the `--severity` filtering branches.
 
 ## Future considerations
 

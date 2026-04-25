@@ -71,7 +71,26 @@ Settings are persisted to `<vault>/.loreweave/lore-weave-watch.json` and hot-rel
 | `-h`, `--help` | — | Prints help and exits. |
 | `-v`, `--version` | — | Prints version and exits. |
 
-A headless `check` subcommand (one-shot validation, exits with `0`/`1`/`2`/`3` for clean/warnings/errors/scan-failure) is on the roadmap for phase 8.
+### Headless `check` mode
+
+For CI hooks or one-shot validation in scripts:
+
+```bash
+java -jar lore-weave-watch.jar check [--json] [--severity=errors|warnings|all] [--vault <path>]
+```
+
+| Flag | Effect |
+|---|---|
+| `--json` | Emit the same JSON shape the dashboard's `/api/validation` returns. |
+| `--severity errors` | Print only error rows (errors still drive the exit code). |
+| `--severity warnings` | Print only warning rows. |
+| `--vault <path>` | Override auto-detection. |
+
+Exit codes: **0** clean, **1** warnings only, **2** any errors, **3** scan failed (bad path, IO error). The same `ignore_paths` configured for the dashboard are honoured here too.
+
+### Claude Code skill
+
+`claude/skills/lore-weave-validate/` ships a thin Claude Code skill that wraps `check --json` and surfaces the result in chat. Copy the directory into `~/.claude/skills/` to install — see its README for details.
 
 ## Obsidian compatibility
 
