@@ -31,5 +31,5 @@ Sibling repo: [LoreWeave](https://github.com/tfassbender/LoreWeave) owns the can
 Planned: Gradle Kotlin DSL, Java 21 toolchain, `com.gradleup.shadow` for the uber-jar. Expected commands (not yet live):
 - `./gradlew shadowJar` → `build/libs/lore-weave-watch.jar`
 - `./gradlew test` → JUnit 5 suite
-- `java -jar build/libs/lore-weave-watch.jar` → watch mode (default port 4718, falls back to OS-picked)
+- `java -jar build/libs/lore-weave-watch.jar` → watch mode (default port 5717 — the sibling LoreWeave server uses 4717; falls back to OS-picked if bound)
 - `java -jar build/libs/lore-weave-watch.jar check [--json] [--severity=errors|warnings|all] <vault>` → headless mode

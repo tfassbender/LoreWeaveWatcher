@@ -77,9 +77,9 @@ Start with (1). Promote to (2) when the drift becomes painful.
 
 **Exit criteria**: `GET /api/validation` returns the full issue list + summary, with a fresh scan on each request.
 
-- [ ] Use `com.sun.net.httpserver.HttpServer`. Default port 4718; fall back to OS-picked if bound.
-- [ ] Endpoints:
-  - `GET /` — embedded `index.html`.
+- [x] Use `com.sun.net.httpserver.HttpServer`. Default port 5717 (watcher; the LoreWeave server uses 4717); fall back to OS-picked if bound. _(Bound to `127.0.0.1` only; `BindException` triggers retry on port 0 — see `WatchServer.bind`.)_
+- [x] Endpoints:
+  - `GET /` — embedded `index.html`. _(Minimal placeholder polling UI; phase 5 replaces the rendering.)_
   - `GET /api/validation` — runs `IndexBuilder.build(<vault>)` and returns:
     ```json
     {
@@ -91,11 +91,13 @@ Start with (1). Promote to (2) when the drift becomes painful.
       "scanned_at": "2026-04-21T14:35:00Z"
     }
     ```
-- [ ] Issues sorted by (severity desc, category asc, path asc, message asc) so the UI doesn't twitch between polls.
-- [ ] Hand-rolled JSON writer is fine (no Jackson dep); all field types are strings/ints/arrays.
-- [ ] Graceful shutdown on Ctrl-C: stop the HTTP server, exit 0.
-- [ ] Auto-launch the browser on startup via `java.awt.Desktop#browse(URI)` once the server is listening (fall back to printing the URL if `Desktop` is unsupported or headless). Same behavior as phase 6 — implementing it here keeps the watch-mode UX usable from day one.
-- [ ] Idle auto-shutdown: track the timestamp of the most recent `/api/validation` request. A background scheduler checks every second and exits cleanly if no poll has arrived within an idle threshold (default 10 s). Apply a startup grace window (~30 s) before the timeout becomes active so the browser has time to load. Any poll from any tab resets the timer, so multiple open tabs are handled implicitly. Threshold + grace window should be constants for now; expose as flags only if needed later. Known tradeoff: aggressive browser background-tab throttling or laptop sleep can trigger shutdown — keep the threshold generous and the launcher cheap to re-run rather than fighting the browser.
+- [x] Issues sorted by (severity desc, category asc, path asc, message asc) so the UI doesn't twitch between polls. _(See `ValidationApi.ISSUE_ORDER`.)_
+- [x] Hand-rolled JSON writer is fine (no Jackson dep); all field types are strings/ints/arrays. _(`server/Json.java`, RFC 8259 escapes; ordered keys via `LinkedHashMap`.)_
+- [x] Graceful shutdown on Ctrl-C: stop the HTTP server, exit 0. _(`Runtime.addShutdownHook` in `Main.runWatch` stops the server and counts down the latch.)_
+- [x] Auto-launch the browser on startup via `java.awt.Desktop#browse(URI)` once the server is listening (fall back to printing the URL if `Desktop` is unsupported or headless). _(`WatchServer.openBrowser`.)_
+- [x] Idle auto-shutdown: track the timestamp of the most recent `/api/validation` request. A background scheduler checks every second and exits cleanly if no poll has arrived within an idle threshold (default 10 s). Apply a startup grace window (~30 s) before the timeout becomes active so the browser has time to load. _(`server/IdleShutdown.java`; thresholds are constants.)_
+
+> Vendored-code divergence required for this phase: extended `graph/Index` with `issues` and `notesExcluded`. See `COPYING_NOTES.md`.
 
 ## Phase 5 — Browser UI
 

@@ -49,15 +49,21 @@ public final class IndexBuilder {
 
     public Index build(Path vaultRoot) {
         ValidationReport.Builder reportBuilder = new ValidationReport.Builder();
+        // Watcher divergence: keep the raw issue list so /api/validation can
+        // surface every issue with its full path + message (the report keeps
+        // only per-category counts + 5 sample paths).
+        List<ValidationIssue> allIssues = new ArrayList<>();
 
         VaultScanner.Result scan = scanner.scan(vaultRoot);
         reportBuilder.addAll(scan.issues());
+        allIssues.addAll(scan.issues());
 
         // Parse every file. Track which ones succeed.
         List<Parsed> served = new ArrayList<>();
         for (VaultScanner.ScannedFile file : scan.files()) {
             ParseResult result = assembler.assemble(file.relativePath(), file.content());
             reportBuilder.addAll(result.issues());
+            allIssues.addAll(result.issues());
             if (result instanceof ParseResult.Success s) {
                 served.add(new Parsed(file, s.note()));
             }
@@ -85,9 +91,11 @@ public final class IndexBuilder {
                             .computeIfAbsent(target.get(), k -> new ArrayList<>())
                             .add(new Backlink(srcKey, link.displayText()));
                 } else {
-                    reportBuilder.add(ValidationIssue.error(
+                    ValidationIssue issue = ValidationIssue.error(
                             ValidationCategory.UNRESOLVED_LINKS, p.file.relativePath(),
-                            "unresolved [[" + link.rawTarget() + "]] in '" + srcKey + "'"));
+                            "unresolved [[" + link.rawTarget() + "]] in '" + srcKey + "'");
+                    reportBuilder.add(issue);
+                    allIssues.add(issue);
                 }
             }
             resolvedByKey.put(srcKey, links);
@@ -102,7 +110,8 @@ public final class IndexBuilder {
             notes.put(key, new IndexedNote(p.note, links, backs));
         }
 
-        return new Index(notes, reportBuilder.build());
+        int notesExcluded = scan.files().size() - served.size();
+        return new Index(notes, reportBuilder.build(), allIssues, notesExcluded);
     }
 
     private record Parsed(VaultScanner.ScannedFile file, Note note) {}

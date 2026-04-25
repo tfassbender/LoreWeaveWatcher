@@ -1,6 +1,10 @@
 package com.tfassbender.loreweave.watch.cli;
 
+import com.tfassbender.loreweave.watch.server.WatchServer;
+
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
 
 public final class Main {
 
@@ -24,7 +28,7 @@ public final class Main {
                 System.out.println("lore-weave-watch " + VERSION);
                 yield 0;
             }
-            case WATCH -> runWithVault(parsed, "watch mode is not implemented yet (phase 4).");
+            case WATCH -> runWatch(parsed);
             case CHECK -> runWithVault(parsed, "check mode is not implemented yet (phase 8).");
             case ERROR -> {
                 System.err.println("error: " + parsed.errorMessage());
@@ -47,6 +51,46 @@ public final class Main {
         }
     }
 
+    private static int runWatch(Args parsed) {
+        Path vault;
+        try {
+            vault = VaultLocator.locate(parsed.vault());
+        } catch (VaultLocator.VaultDetectionException e) {
+            System.err.println("error: " + e.getMessage());
+            return 3;
+        }
+        System.out.println("vault: " + vault);
+
+        int port = parsed.port() == null ? WatchServer.DEFAULT_PORT : parsed.port();
+        CountDownLatch done = new CountDownLatch(1);
+        WatchServer server;
+        try {
+            server = WatchServer.start(vault, port, () -> {
+                System.out.println("idle: no polls for ~10s, shutting down");
+                done.countDown();
+            });
+        } catch (IOException e) {
+            System.err.println("error: failed to start HTTP server: " + e.getMessage());
+            return 3;
+        }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            server.stop();
+            done.countDown();
+        }, "lwwatch-shutdown"));
+
+        System.out.println("listening on " + server.url());
+        server.openBrowser();
+
+        try {
+            done.await();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+        server.stop();
+        return 0;
+    }
+
     static String helpText() {
         return """
                 lore-weave-watch - live validation dashboard for LoreWeave Obsidian vaults
@@ -61,7 +105,7 @@ public final class Main {
 
                 Options:
                   --vault <path>            override vault auto-detection
-                  --port <n>                HTTP port (default 4718, watch mode only)
+                  --port <n>                HTTP port (default 5717, watch mode only)
                   --json                    JSON output (check mode only)
                   --severity <level>        errors | warnings | all (check mode only, default all)
                   -h, --help                show this help and exit

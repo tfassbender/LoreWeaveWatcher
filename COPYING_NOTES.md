@@ -19,6 +19,13 @@ Parser bug fixes originate in LoreWeave first, then get ported here. Never fix p
 - `com.tfassbender.loreweave.parsing` → `com.tfassbender.loreweave.watch.parser` (per CLAUDE.md target package layout).
 - `com.tfassbender.loreweave.{domain,graph}` → `com.tfassbender.loreweave.watch.{domain,graph}`.
 
+## Behavioral additions to vendored code
+
+These are intentionally additive (no existing call site changes its result) and tracked here so they can be ported back to LoreWeave if desired:
+
+- `graph/Index` — added `List<ValidationIssue> issues` and `int notesExcluded` components. The two-arg legacy constructor still works. Required because `ValidationReport` keeps at most 5 sample paths per category, but `/api/validation` must surface every issue with its full path and message.
+- `graph/IndexBuilder` — accumulates the raw issue list alongside the report and computes `notesExcluded = scanned - served`.
+
 ## Excluded from the port
 
 These graph classes were intentionally not vendored — they belong to the server/git side of LoreWeave and have no role in the local watcher:
