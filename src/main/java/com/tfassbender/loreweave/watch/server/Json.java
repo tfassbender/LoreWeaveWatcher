@@ -20,11 +20,19 @@ public final class Json {
 
     public static String render(Object value) {
         StringBuilder sb = new StringBuilder();
-        write(sb, value);
+        write(sb, value, -1, 0);
         return sb.toString();
     }
 
-    private static void write(StringBuilder sb, Object v) {
+    /** Renders with two-space indent so the on-disk config stays human-readable. */
+    public static String renderPretty(Object value) {
+        StringBuilder sb = new StringBuilder();
+        write(sb, value, 2, 0);
+        sb.append('\n');
+        return sb.toString();
+    }
+
+    private static void write(StringBuilder sb, Object v, int indent, int depth) {
         if (v == null) {
             sb.append("null");
         } else if (v instanceof Boolean b) {
@@ -34,36 +42,48 @@ public final class Json {
         } else if (v instanceof CharSequence s) {
             quote(sb, s.toString());
         } else if (v instanceof Map<?, ?> m) {
-            writeObject(sb, m);
+            writeObject(sb, m, indent, depth);
         } else if (v instanceof List<?> l) {
-            writeArray(sb, l);
+            writeArray(sb, l, indent, depth);
         } else {
             throw new IllegalArgumentException("unsupported JSON value type: " + v.getClass().getName());
         }
     }
 
-    private static void writeObject(StringBuilder sb, Map<?, ?> m) {
+    private static void writeObject(StringBuilder sb, Map<?, ?> m, int indent, int depth) {
+        if (m.isEmpty()) { sb.append("{}"); return; }
         sb.append('{');
+        boolean pretty = indent >= 0;
         boolean first = true;
         for (Map.Entry<?, ?> e : m.entrySet()) {
             if (!first) sb.append(',');
             first = false;
+            if (pretty) { sb.append('\n'); pad(sb, indent * (depth + 1)); }
             quote(sb, String.valueOf(e.getKey()));
-            sb.append(':');
-            write(sb, e.getValue());
+            sb.append(pretty ? ": " : ":");
+            write(sb, e.getValue(), indent, depth + 1);
         }
+        if (pretty) { sb.append('\n'); pad(sb, indent * depth); }
         sb.append('}');
     }
 
-    private static void writeArray(StringBuilder sb, List<?> l) {
+    private static void writeArray(StringBuilder sb, List<?> l, int indent, int depth) {
+        if (l.isEmpty()) { sb.append("[]"); return; }
         sb.append('[');
+        boolean pretty = indent >= 0;
         boolean first = true;
         for (Object item : l) {
             if (!first) sb.append(',');
             first = false;
-            write(sb, item);
+            if (pretty) { sb.append('\n'); pad(sb, indent * (depth + 1)); }
+            write(sb, item, indent, depth + 1);
         }
+        if (pretty) { sb.append('\n'); pad(sb, indent * depth); }
         sb.append(']');
+    }
+
+    private static void pad(StringBuilder sb, int n) {
+        for (int i = 0; i < n; i++) sb.append(' ');
     }
 
     private static void quote(StringBuilder sb, String s) {

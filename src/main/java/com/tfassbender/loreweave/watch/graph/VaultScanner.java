@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Recursively walks a vault directory and reads all {@code .md} files as UTF-8.
@@ -31,8 +32,19 @@ public final class VaultScanner {
     private static final Set<String> ALWAYS_SKIP = Set.of(".git", ".obsidian", ".trash");
 
     public Result scan(Path vaultRoot) {
+        return scan(vaultRoot, p -> false);
+    }
+
+    /**
+     * Watcher extension: takes a predicate that, given a vault-relative path
+     * (POSIX-normalized, forward-slash), returns true to skip that file or
+     * directory tree. Drives the {@code ignore_paths} config field. See
+     * COPYING_NOTES.md for the divergence note.
+     */
+    public Result scan(Path vaultRoot, Predicate<String> excluded) {
         List<ScannedFile> files = new ArrayList<>();
         List<ValidationIssue> issues = new ArrayList<>();
+        Predicate<String> exclude = excluded == null ? p -> false : excluded;
 
         if (vaultRoot == null || !Files.isDirectory(vaultRoot)) {
             issues.add(ValidationIssue.error(
@@ -48,6 +60,8 @@ public final class VaultScanner {
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     if (dir.equals(vaultRoot)) return FileVisitResult.CONTINUE;
                     String name = dir.getFileName().toString();
+                    String rel = vaultRoot.relativize(dir).toString().replace('\\', '/');
+                    if (exclude.test(rel)) return FileVisitResult.SKIP_SUBTREE;
                     if (name.startsWith(".") || ALWAYS_SKIP.contains(name)) {
                         return FileVisitResult.SKIP_SUBTREE;
                     }
@@ -58,6 +72,8 @@ public final class VaultScanner {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     String name = file.getFileName().toString();
                     if (!name.endsWith(".md")) return FileVisitResult.CONTINUE;
+                    String rel = vaultRoot.relativize(file).toString().replace('\\', '/');
+                    if (exclude.test(rel)) return FileVisitResult.CONTINUE;
                     try {
                         String content = Files.readString(file, StandardCharsets.UTF_8);
                         files.add(new ScannedFile(file, vaultRoot.relativize(file), content));

@@ -68,4 +68,31 @@ class IdleShutdownTest {
 
         assertThat(fireCount.get()).isEqualTo(1);
     }
+
+    @Test
+    void updateRaisesThresholdSoPastIdleNoLongerFires() {
+        AtomicLong now = new AtomicLong(0);
+        AtomicBoolean fired = new AtomicBoolean();
+        IdleShutdown idle = new IdleShutdown(100, 1000, now::get, () -> fired.set(true));
+
+        // Past grace, would have fired with 100 ms threshold...
+        now.set(1500);
+        // ...but raise the threshold first; tick must respect the new value.
+        // age since startedAt is 1500 ms, so a 5_000 ms threshold should suppress firing.
+        idle.update(true, 5_000, 1000);
+        idle.tickNow();
+        assertThat(fired).isFalse();
+    }
+
+    @Test
+    void disablingViaUpdateSuppressesFiring() {
+        AtomicLong now = new AtomicLong(0);
+        AtomicBoolean fired = new AtomicBoolean();
+        IdleShutdown idle = new IdleShutdown(100, 1000, now::get, () -> fired.set(true));
+
+        idle.update(false, 100, 1000);
+        now.set(5000);
+        idle.tickNow();
+        assertThat(fired).isFalse();
+    }
 }

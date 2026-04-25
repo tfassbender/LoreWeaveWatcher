@@ -20,8 +20,9 @@ public final class IdleShutdown {
     static final long DEFAULT_GRACE_MILLIS = 30_000L;
     private static final long TICK_MILLIS = 1_000L;
 
-    private final long thresholdMillis;
-    private final long graceMillis;
+    private volatile long thresholdMillis;
+    private volatile long graceMillis;
+    private volatile boolean enabled = true;
     private final long startedAt;
     private final LongSupplier clock;
     private final Runnable onIdle;
@@ -47,6 +48,13 @@ public final class IdleShutdown {
         });
     }
 
+    /** Hot-reloadable setter. Existing tick loop picks up the new values. */
+    public void update(boolean enabled, long thresholdMillis, long graceMillis) {
+        this.enabled = enabled;
+        this.thresholdMillis = thresholdMillis;
+        this.graceMillis = graceMillis;
+    }
+
     public void start() {
         scheduler.scheduleAtFixedRate(this::tick, TICK_MILLIS, TICK_MILLIS, TimeUnit.MILLISECONDS);
     }
@@ -65,7 +73,7 @@ public final class IdleShutdown {
     }
 
     private void tick() {
-        if (fired) return;
+        if (fired || !enabled) return;
         long now = clock.getAsLong();
         if (now - startedAt < graceMillis) return;
         if (now - lastPollMillis > thresholdMillis) {

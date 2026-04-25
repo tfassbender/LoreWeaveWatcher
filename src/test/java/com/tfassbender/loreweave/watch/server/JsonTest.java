@@ -56,4 +56,21 @@ class JsonTest {
         assertThatThrownBy(() -> Json.render(new Object()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void renderPrettyIndentsAndAppendsNewline() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("a", 1);
+        m.put("b", List.of(2, 3));
+        String out = Json.renderPretty(m);
+        assertThat(out).isEqualTo("{\n  \"a\": 1,\n  \"b\": [\n    2,\n    3\n  ]\n}\n");
+    }
+
+    @Test
+    void renderPrettyKeepsEmptyContainersInline() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("xs", List.of());
+        m.put("inner", Map.of());
+        assertThat(Json.renderPretty(m)).isEqualTo("{\n  \"xs\": [],\n  \"inner\": {}\n}\n");
+    }
 }

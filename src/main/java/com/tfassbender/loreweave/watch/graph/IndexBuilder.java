@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Builds an immutable {@link Index} from a vault on disk. The pipeline:
@@ -48,13 +49,22 @@ public final class IndexBuilder {
     }
 
     public Index build(Path vaultRoot) {
+        return build(vaultRoot, p -> false);
+    }
+
+    /**
+     * Watcher extension: skips any vault-relative path (POSIX-normalized) for
+     * which {@code excluded.test(path)} returns true. Threaded through to
+     * {@link VaultScanner#scan(Path, Predicate)}. See COPYING_NOTES.md.
+     */
+    public Index build(Path vaultRoot, Predicate<String> excluded) {
         ValidationReport.Builder reportBuilder = new ValidationReport.Builder();
         // Watcher divergence: keep the raw issue list so /api/validation can
         // surface every issue with its full path + message (the report keeps
         // only per-category counts + 5 sample paths).
         List<ValidationIssue> allIssues = new ArrayList<>();
 
-        VaultScanner.Result scan = scanner.scan(vaultRoot);
+        VaultScanner.Result scan = scanner.scan(vaultRoot, excluded);
         reportBuilder.addAll(scan.issues());
         allIssues.addAll(scan.issues());
 

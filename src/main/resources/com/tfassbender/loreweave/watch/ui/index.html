@@ -269,6 +269,205 @@
         }
         .show-hidden:hover { color: var(--fg); border-color: var(--fg-muted); }
         .show-hidden[hidden] { display: none; }
+
+        /* Settings dialog */
+        dialog.settings-dialog {
+            color: var(--fg);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0;
+            max-width: 640px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        dialog.settings-dialog::backdrop { background: rgba(0,0,0,0.5); }
+        body.lww-modal-open { overflow: hidden; }
+        dialog.settings-dialog form {
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        .dialog-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .dialog-head h2 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+        .dialog-head h2 .fa-gear { color: var(--fg-muted); margin-right: 0.4rem; }
+        .dialog-close {
+            background: transparent;
+            border: none;
+            color: var(--fg-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        .dialog-close:hover { color: var(--fg); background: var(--bg-alt); }
+        .dialog-section {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            overflow-y: auto;
+        }
+        .dialog-section h3 {
+            margin: 0 0 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--fg-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .dialog-section h4 {
+            margin: 0.5rem 0 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--fg-muted);
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.35rem 0;
+        }
+        .row-label { font-size: 0.9rem; }
+        .row-control { display: flex; gap: 0.75rem; align-items: center; }
+        .dialog-section input[type="number"],
+        .dialog-section input[type="text"] {
+            padding: 0.25rem 0.4rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--fg);
+            font: inherit;
+            font-size: 0.9rem;
+        }
+        .dialog-section input[type="number"]:focus,
+        .dialog-section input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .dialog-section input[type="number"]::placeholder,
+        .dialog-section input[type="text"]::placeholder {
+            color: var(--fg-muted);
+        }
+        .row-control input[type="number"] { width: 7rem; }
+        .row-control input[type="text"] { width: 100%; }
+        .row-control input[type="checkbox"] { width: 1rem; height: 1rem; }
+        .radio { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.9rem; }
+        .row-hint { color: var(--fg-muted); font-size: 0.8rem; margin: 0.2rem 0 0; }
+
+        .ignore-search { position: relative; margin-bottom: 0.5rem; }
+        .ignore-search input { width: 100%; }
+        .ignore-current-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        .link-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.8rem;
+            padding: 0.1rem 0;
+        }
+        .link-btn:hover { text-decoration: underline; }
+        .link-btn[hidden] { display: none; }
+        .ignore-suggestions {
+            list-style: none;
+            margin: 0.25rem 0 0;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            max-height: 12rem;
+            overflow-y: auto;
+            background: var(--bg-alt);
+        }
+        .ignore-suggestions li {
+            padding: 0.3rem 0.6rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ignore-suggestions li:hover { background: var(--bg); }
+        .ignore-suggestions li .fa-plus { color: var(--accent); }
+
+        .ignore-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            min-height: 2rem;
+            background: var(--bg-alt);
+        }
+        .ignore-list li {
+            padding: 0.3rem 0.6rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .ignore-list li:last-child { border-bottom: none; }
+        .ignore-list li.empty { color: var(--fg-muted); font-style: italic; cursor: default; }
+        .ignore-list .remove-btn {
+            background: transparent;
+            border: none;
+            color: var(--fg-muted);
+            cursor: pointer;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+        }
+        .ignore-list .remove-btn:hover { color: var(--error); background: var(--bg); }
+
+        .cfg-error {
+            margin: 0;
+            padding: 0.5rem 1rem;
+            color: var(--error);
+            font-size: 0.85rem;
+            background: var(--error-bg);
+            border-bottom: 1px solid var(--error-border);
+        }
+        .cfg-error[hidden] { display: none; }
+
+        .dialog-foot {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+        }
+        .btn {
+            padding: 0.35rem 0.85rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg-alt);
+            color: var(--fg);
+            font: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn:hover { border-color: var(--fg-muted); }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .btn-primary:hover { filter: brightness(1.1); }
     </style>
 </head>
 <body>
@@ -283,11 +482,82 @@
             <i class="fa-solid fa-eye" aria-hidden="true"></i>
             show <span id="hidden-count">0</span> hidden
         </button>
+        <button id="settings-btn" class="theme-toggle" type="button" aria-label="Open settings" title="Open settings">
+            <i class="fa-solid fa-gear" aria-hidden="true"></i>
+        </button>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
             <i id="theme-icon" class="fa-solid fa-sun" aria-hidden="true"></i>
         </button>
     </div>
 </header>
+<dialog id="settings-dialog" class="settings-dialog">
+    <form method="dialog" id="settings-form">
+        <header class="dialog-head">
+            <h2><i class="fa-solid fa-gear" aria-hidden="true"></i> Settings</h2>
+            <button type="button" class="dialog-close" id="settings-close" aria-label="Close settings" title="Close">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </header>
+        <section class="dialog-section">
+            <h3>General</h3>
+            <label class="row">
+                <span class="row-label">Theme</span>
+                <span class="row-control">
+                    <label class="radio"><input type="radio" name="theme" value="dark"> Dark</label>
+                    <label class="radio"><input type="radio" name="theme" value="light"> Light</label>
+                </span>
+            </label>
+            <label class="row">
+                <span class="row-label">Auto-open browser on start</span>
+                <span class="row-control">
+                    <input type="checkbox" id="cfg-auto-open">
+                </span>
+            </label>
+            <label class="row">
+                <span class="row-label">Poll interval (seconds)</span>
+                <span class="row-control">
+                    <input type="number" id="cfg-poll-interval" min="1" step="1">
+                </span>
+            </label>
+        </section>
+        <section class="dialog-section">
+            <h3>Idle shutdown</h3>
+            <label class="row">
+                <span class="row-label">Enabled</span>
+                <span class="row-control">
+                    <input type="checkbox" id="cfg-idle-enabled">
+                </span>
+            </label>
+            <label class="row">
+                <span class="row-label">Threshold (seconds)</span>
+                <span class="row-control">
+                    <input type="number" id="cfg-idle-threshold" min="6" step="1">
+                </span>
+            </label>
+            <p class="row-hint">Threshold must be at least <span id="cfg-idle-min">…</span> seconds (poll interval + 5 seconds).</p>
+        </section>
+        <section class="dialog-section">
+            <h3>Ignore paths</h3>
+            <p class="row-hint">Files or directories listed here are skipped by validation. Directory names match the entire subtree.</p>
+            <div class="ignore-search">
+                <input type="text" id="cfg-ignore-search" placeholder="Search files or directories…" autocomplete="off">
+                <ul id="cfg-ignore-suggestions" class="ignore-suggestions" hidden></ul>
+            </div>
+            <div class="ignore-current">
+                <div class="ignore-current-head">
+                    <h4>Currently ignored</h4>
+                    <button type="button" id="cfg-ignore-clear" class="link-btn" hidden>Clear all</button>
+                </div>
+                <ul id="cfg-ignore-list" class="ignore-list"></ul>
+            </div>
+        </section>
+        <p id="cfg-error" class="cfg-error" hidden></p>
+        <footer class="dialog-foot">
+            <button type="button" id="settings-cancel" class="btn">Cancel</button>
+            <button type="submit" id="settings-save" class="btn btn-primary">Save</button>
+        </footer>
+    </form>
+</dialog>
 <main>
     <div id="categories"></div>
     <div id="empty"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> No issues &mdash; looking good!</div>
@@ -297,7 +567,7 @@
     "use strict";
 
     const params   = new URLSearchParams(location.search);
-    const interval = Math.max(200, parseInt(params.get("interval") || "1000", 10));
+    const intervalOverride = parseInt(params.get("interval") || "", 10);
 
     const elVault     = document.getElementById("vault");
     const elStats     = document.getElementById("stats");
@@ -308,6 +578,27 @@
     const elThemeIcon = document.getElementById("theme-icon");
     const elShowHidden = document.getElementById("show-hidden");
     const elHiddenCount = document.getElementById("hidden-count");
+    const elSettingsBtn = document.getElementById("settings-btn");
+    const elDialog    = document.getElementById("settings-dialog");
+    const elForm      = document.getElementById("settings-form");
+    const elClose     = document.getElementById("settings-close");
+    const elCancel    = document.getElementById("settings-cancel");
+    const elCfgError  = document.getElementById("cfg-error");
+    const elIgnoreSearch = document.getElementById("cfg-ignore-search");
+    const elIgnoreSuggestions = document.getElementById("cfg-ignore-suggestions");
+    const elIgnoreList = document.getElementById("cfg-ignore-list");
+    const elIgnoreClear = document.getElementById("cfg-ignore-clear");
+    const elIdleMin   = document.getElementById("cfg-idle-min");
+
+    // Live server config (mirrors the JSON file). Populated on first poll;
+    // settings dialog reads/writes it.
+    let liveConfig = null;
+    // Working copy of ignore_paths used while the dialog is open.
+    let dialogIgnorePaths = [];
+    // Cached vault path list for the search picker (refreshed on dialog open).
+    let vaultPaths = [];
+    // Effective poll interval (URL override > config > default).
+    let effectiveInterval = 1000;
 
     // Session-only set of hidden issue keys. Cleared on reload — the user
     // muted noise for the current session, not persistently.
@@ -616,9 +907,222 @@
         return li;
     }
 
+    // --- Settings dialog --------------------------------------------------
+    async function loadConfig() {
+        try {
+            const res = await fetch("/api/config", { cache: "no-store" });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            liveConfig = await res.json();
+            applyTheme(liveConfig.theme);
+            try { localStorage.setItem("lww-theme", liveConfig.theme); } catch (e) { /* ignore */ }
+            applyEffectiveInterval();
+        } catch (e) {
+            // Config endpoint unavailable — fall back to defaults so the rest of
+            // the dashboard keeps working.
+            console.warn("could not load config:", e);
+        }
+    }
+
+    function applyEffectiveInterval() {
+        const fromConfig = liveConfig && liveConfig.poll_interval_ms ? liveConfig.poll_interval_ms : 1000;
+        const next = Math.max(200, isNaN(intervalOverride) ? fromConfig : intervalOverride);
+        if (next !== effectiveInterval) {
+            effectiveInterval = next;
+            if (timerHandle) clearInterval(timerHandle);
+            timerHandle = setInterval(poll, effectiveInterval);
+        }
+    }
+
+    async function fetchVaultPaths() {
+        try {
+            const res = await fetch("/api/vault-paths", { cache: "no-store" });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            vaultPaths = data.paths || [];
+        } catch (e) {
+            vaultPaths = [];
+        }
+    }
+
+    function openSettings() {
+        if (!liveConfig) return;
+        elCfgError.hidden = true;
+        // Populate form from live config. The dialog talks in seconds; the wire
+        // format and on-disk file stay in milliseconds.
+        const themeRadio = elForm.querySelector('input[name="theme"][value="' + liveConfig.theme + '"]');
+        if (themeRadio) themeRadio.checked = true;
+        document.getElementById("cfg-auto-open").checked = !!liveConfig.auto_open_browser;
+        document.getElementById("cfg-poll-interval").value = msToSeconds(liveConfig.poll_interval_ms);
+        document.getElementById("cfg-idle-enabled").checked = !!liveConfig.idle_shutdown.enabled;
+        document.getElementById("cfg-idle-threshold").value = msToSeconds(liveConfig.idle_shutdown.threshold_ms);
+        dialogIgnorePaths = (liveConfig.ignore_paths || []).slice();
+        renderIgnoreList();
+        renderIgnoreSuggestions("");
+        updateIdleMinHint();
+        fetchVaultPaths();
+        document.body.classList.add("lww-modal-open");
+        elDialog.showModal();
+    }
+
+    function closeSettings() {
+        elDialog.close();
+    }
+
+    elDialog.addEventListener("close", () => {
+        document.body.classList.remove("lww-modal-open");
+    });
+
+    function msToSeconds(ms) { return Math.round((ms || 0) / 1000); }
+    function secondsToMs(s)  { return Math.round((Number(s) || 0) * 1000); }
+
+    elSettingsBtn.addEventListener("click", openSettings);
+    elClose.addEventListener("click", closeSettings);
+    elCancel.addEventListener("click", closeSettings);
+
+    function updateIdleMinHint() {
+        const pollSec = parseInt(document.getElementById("cfg-poll-interval").value, 10) || 0;
+        elIdleMin.textContent = (pollSec + 5);
+    }
+    document.getElementById("cfg-poll-interval").addEventListener("input", updateIdleMinHint);
+
+    function renderIgnoreList() {
+        elIgnoreList.innerHTML = "";
+        elIgnoreClear.hidden = dialogIgnorePaths.length === 0;
+        if (dialogIgnorePaths.length === 0) {
+            const li = document.createElement("li");
+            li.className = "empty";
+            li.textContent = "No paths ignored.";
+            elIgnoreList.appendChild(li);
+            return;
+        }
+        dialogIgnorePaths.forEach((p, idx) => {
+            const li = document.createElement("li");
+            const span = document.createElement("span");
+            span.textContent = p;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "remove-btn";
+            btn.title = "Remove from ignore list";
+            btn.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+            btn.addEventListener("click", () => {
+                dialogIgnorePaths.splice(idx, 1);
+                renderIgnoreList();
+                renderIgnoreSuggestions(elIgnoreSearch.value);
+            });
+            li.appendChild(span);
+            li.appendChild(btn);
+            elIgnoreList.appendChild(li);
+        });
+    }
+
+    function renderIgnoreSuggestions(query) {
+        const q = (query || "").trim().toLowerCase();
+        if (!q) { elIgnoreSuggestions.hidden = true; elIgnoreSuggestions.innerHTML = ""; return; }
+        const ignoredSet = new Set(dialogIgnorePaths);
+        const matches = vaultPaths
+            .filter(p => p.toLowerCase().includes(q) && !ignoredSet.has(p))
+            .slice(0, 30);
+        elIgnoreSuggestions.innerHTML = "";
+        if (matches.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "No matches in vault. Press Enter to add literally.";
+            li.style.cursor = "default";
+            li.style.color = "var(--fg-muted)";
+            elIgnoreSuggestions.appendChild(li);
+        } else {
+            for (const p of matches) {
+                const li = document.createElement("li");
+                const span = document.createElement("span");
+                span.textContent = p;
+                const plus = document.createElement("i");
+                plus.className = "fa-solid fa-plus";
+                li.appendChild(span);
+                li.appendChild(plus);
+                li.addEventListener("click", () => addIgnore(p));
+                elIgnoreSuggestions.appendChild(li);
+            }
+        }
+        elIgnoreSuggestions.hidden = false;
+    }
+
+    function addIgnore(p) {
+        if (!p || dialogIgnorePaths.includes(p)) return;
+        dialogIgnorePaths.push(p);
+        renderIgnoreList();
+        elIgnoreSearch.value = "";
+        renderIgnoreSuggestions("");
+        elIgnoreSearch.focus();
+    }
+
+    elIgnoreSearch.addEventListener("input", e => renderIgnoreSuggestions(e.target.value));
+    elIgnoreSearch.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            const v = elIgnoreSearch.value.trim();
+            if (v) addIgnore(v);
+        }
+    });
+    elIgnoreClear.addEventListener("click", () => {
+        dialogIgnorePaths = [];
+        renderIgnoreList();
+        renderIgnoreSuggestions(elIgnoreSearch.value);
+        elIgnoreSearch.focus();
+    });
+
+    elForm.addEventListener("submit", async e => {
+        e.preventDefault();
+        elCfgError.hidden = true;
+        const themeChecked = elForm.querySelector('input[name="theme"]:checked');
+        const pollSec      = parseInt(document.getElementById("cfg-poll-interval").value, 10);
+        const thresholdSec = parseInt(document.getElementById("cfg-idle-threshold").value, 10);
+        const next = {
+            theme: themeChecked ? themeChecked.value : "dark",
+            auto_open_browser: document.getElementById("cfg-auto-open").checked,
+            poll_interval_ms: secondsToMs(isNaN(pollSec) ? 1 : pollSec),
+            idle_shutdown: {
+                enabled: document.getElementById("cfg-idle-enabled").checked,
+                threshold_ms: secondsToMs(isNaN(thresholdSec) ? 10 : thresholdSec),
+                grace_ms: liveConfig.idle_shutdown.grace_ms,
+            },
+            ignore_paths: dialogIgnorePaths.slice(),
+        };
+        // Client-side validation, expressed in seconds for the message.
+        if (next.idle_shutdown.enabled
+                && next.idle_shutdown.threshold_ms < next.poll_interval_ms + 5000) {
+            const minSec = msToSeconds(next.poll_interval_ms) + 5;
+            elCfgError.textContent = "Idle shutdown threshold must be at least poll interval + 5 seconds ("
+                + minSec + " seconds).";
+            elCfgError.hidden = false;
+            return;
+        }
+        try {
+            const res = await fetch("/api/config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(next),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({ error: "HTTP " + res.status }));
+                elCfgError.textContent = errBody.error || "Save failed.";
+                elCfgError.hidden = false;
+                return;
+            }
+            liveConfig = await res.json();
+            applyTheme(liveConfig.theme);
+            try { localStorage.setItem("lww-theme", liveConfig.theme); } catch (err) { /* ignore */ }
+            applyEffectiveInterval();
+            elDialog.close();
+        } catch (err) {
+            elCfgError.textContent = "Network error: " + (err.message || err);
+            elCfgError.hidden = false;
+        }
+    });
+
     // --- Bootstrap ---------------------------------------------------------
-    poll();
-    timerHandle = setInterval(poll, interval);
+    loadConfig().then(() => {
+        poll();
+        timerHandle = setInterval(poll, effectiveInterval);
+    });
     // The chip flips green→red when the last success crosses OFFLINE_AFTER_MS,
     // and the tooltip's "X s ago" text needs to advance between polls. A 1 s
     // tick is plenty — chip text only changes on state transitions.

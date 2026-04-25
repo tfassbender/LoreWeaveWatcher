@@ -1,5 +1,6 @@
 package com.tfassbender.loreweave.watch.cli;
 
+import com.tfassbender.loreweave.watch.server.ConfigStore;
 import com.tfassbender.loreweave.watch.server.WatchServer;
 
 import java.io.IOException;
@@ -63,10 +64,12 @@ public final class Main {
 
         int port = parsed.port() == null ? WatchServer.DEFAULT_PORT : parsed.port();
         CountDownLatch done = new CountDownLatch(1);
+        ConfigStore configStore = new ConfigStore(vault.resolve(".loreweave").resolve("lore-weave-watch.json"));
+        System.out.println("config: " + configStore.file());
         WatchServer server;
         try {
-            server = WatchServer.start(vault, port, () -> {
-                System.out.println("idle: no polls for ~10s, shutting down");
+            server = WatchServer.start(vault, port, configStore, () -> {
+                System.out.println("idle: server inactive past idle threshold, shutting down");
                 done.countDown();
             });
         } catch (IOException e) {
