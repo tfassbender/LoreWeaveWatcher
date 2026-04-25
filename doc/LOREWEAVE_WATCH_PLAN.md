@@ -94,6 +94,8 @@ Start with (1). Promote to (2) when the drift becomes painful.
 - [ ] Issues sorted by (severity desc, category asc, path asc, message asc) so the UI doesn't twitch between polls.
 - [ ] Hand-rolled JSON writer is fine (no Jackson dep); all field types are strings/ints/arrays.
 - [ ] Graceful shutdown on Ctrl-C: stop the HTTP server, exit 0.
+- [ ] Auto-launch the browser on startup via `java.awt.Desktop#browse(URI)` once the server is listening (fall back to printing the URL if `Desktop` is unsupported or headless). Same behavior as phase 6 — implementing it here keeps the watch-mode UX usable from day one.
+- [ ] Idle auto-shutdown: track the timestamp of the most recent `/api/validation` request. A background scheduler checks every second and exits cleanly if no poll has arrived within an idle threshold (default 10 s). Apply a startup grace window (~30 s) before the timeout becomes active so the browser has time to load. Any poll from any tab resets the timer, so multiple open tabs are handled implicitly. Threshold + grace window should be constants for now; expose as flags only if needed later. Known tradeoff: aggressive browser background-tab throttling or laptop sleep can trigger shutdown — keep the threshold generous and the launcher cheap to re-run rather than fighting the browser.
 
 ## Phase 5 — Browser UI
 
@@ -116,7 +118,7 @@ Start with (1). Promote to (2) when the drift becomes painful.
 - [ ] Launcher scripts shipped alongside:
   - `lore-weave-watch.bat` (Windows).
   - `lore-weave-watch.sh` (Unix, chmod +x).
-- [ ] Auto-open the browser via `java.awt.Desktop#browse(URI)` if the environment supports it; otherwise print the URL.
+- [ ] Browser auto-launch is already wired in phase 4; this phase just confirms it works from the launcher scripts on Windows + Linux.
 - [ ] README covers: place the jar under `<vault>/.loreweave/`, run the launcher, note that `.loreweave/` is ignored by Obsidian by default (or add it to the user's Obsidian "Excluded files" if they've changed defaults).
 
 ## Phase 7 — Tests
