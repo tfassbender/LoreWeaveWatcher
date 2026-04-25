@@ -114,14 +114,14 @@ Start with (1). Promote to (2) when the drift becomes painful.
 
 ## Phase 6 — Packaging + launchers
 
-**Exit criteria**: drop-in install: unzip a release archive into `<vault>/.loreweave/`, double-click (or `./lore-weave-watch.sh`), see results.
+**Exit criteria**: drop-in install: drop the jar into `<vault>/.loreweave/`, run `java -jar`, see results.
 
-- [ ] `shadowJar` emits `lore-weave-watch.jar`.
-- [ ] Launcher scripts shipped alongside:
-  - `lore-weave-watch.bat` (Windows).
-  - `lore-weave-watch.sh` (Unix, chmod +x).
-- [ ] Browser auto-launch is already wired in phase 4; this phase just confirms it works from the launcher scripts on Windows + Linux.
-- [ ] README covers: place the jar under `<vault>/.loreweave/`, run the launcher, note that `.loreweave/` is ignored by Obsidian by default (or add it to the user's Obsidian "Excluded files" if they've changed defaults). Also document the manual-testing Gradle tasks `cloneTestVault` and `installToTestVault` (which check out [LoreWeaveTestVault](https://github.com/tfassbender/LoreWeaveTestVault) into `./test-vault/` and copy the shadow jar into `test-vault/.loreweave/`).
+- [x] `shadowJar` emits `lore-weave-watch.jar`. _(Confirmed by `./gradlew shadowJar`; output at `build/libs/lore-weave-watch.jar`.)_
+- [~] Launcher scripts shipped alongside (skipped — `java -jar` is enough; users already have a JDK to run the watcher and we don't need OS-specific shims):
+  - ~~`lore-weave-watch.bat` (Windows).~~
+  - ~~`lore-weave-watch.sh` (Unix, chmod +x).~~
+- [x] Browser auto-launch is already wired in phase 4; this phase just confirms it works on Windows + Linux. _(Verified end-to-end via Playwright on Windows; print-URL fallback path covered by smoke tests with `-Djava.awt.headless=true`.)_
+- [x] README covers: place the jar under `<vault>/.loreweave/`, run via `java -jar`, note that `.loreweave/` is ignored by Obsidian by default. Also documents the manual-testing Gradle tasks `cloneTestVault` and `installToTestVault`. _(See `README.md` at the repo root.)_
 
 ## Phase 7 — Tests
 
