@@ -198,7 +198,7 @@
         }
         ul.issues > li {
             display: grid;
-            grid-template-columns: 1rem 1fr;
+            grid-template-columns: 1rem 1fr auto;
             gap: 0.5rem;
             padding: 0.4rem 0.75rem;
             border-top: 1px solid var(--border);
@@ -234,6 +234,41 @@
         }
         #empty .fa-circle-check { margin-right: 0.4rem; }
         #empty.visible { display: block; }
+        #empty.all-hidden { color: var(--fg-muted); }
+        #empty.all-hidden .fa-circle-check { display: none; }
+
+        /* Hide buttons (per-issue, per-category) and top-bar restore button */
+        .hide-btn {
+            background: transparent;
+            border: none;
+            color: var(--fg-muted);
+            opacity: 0.55;
+            cursor: pointer;
+            padding: 0.15rem 0.35rem;
+            border-radius: 3px;
+            font: inherit;
+            font-size: 0.85em;
+            line-height: 1;
+        }
+        .hide-btn:hover { opacity: 1; color: var(--fg); background: var(--bg-alt); }
+        section.category > h2 .hide-btn { margin-left: auto; }
+        ul.issues > li .hide-btn { align-self: start; }
+
+        .show-hidden {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--fg-muted);
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .show-hidden:hover { color: var(--fg); border-color: var(--fg-muted); }
+        .show-hidden[hidden] { display: none; }
     </style>
 </head>
 <body>
@@ -243,6 +278,11 @@
         <span class="vault-path" id="vault">&hellip;</span>
         <span class="chip pending" id="status-chip" role="status" title="Waiting for first response">connecting&hellip;</span>
         <div class="stats" id="stats"></div>
+        <button id="show-hidden" class="show-hidden" type="button" hidden
+                title="Restore all hidden issues">
+            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+            show <span id="hidden-count">0</span> hidden
+        </button>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
             <i id="theme-icon" class="fa-solid fa-sun" aria-hidden="true"></i>
         </button>
@@ -266,6 +306,16 @@
     const elEmpty     = document.getElementById("empty");
     const elThemeBtn  = document.getElementById("theme-toggle");
     const elThemeIcon = document.getElementById("theme-icon");
+    const elShowHidden = document.getElementById("show-hidden");
+    const elHiddenCount = document.getElementById("hidden-count");
+
+    // Session-only set of hidden issue keys. Cleared on reload — the user
+    // muted noise for the current session, not persistently.
+    const hiddenKeys = new Set();
+    // Cache the most recent server payload so hide/unhide can re-render
+    // without waiting for the next poll.
+    let lastIssues  = [];
+    let lastSummary = null;
 
     // Status chip flips from green ("live") to red ("offline") when no
     // successful poll has landed in this many ms.
@@ -326,23 +376,48 @@
 
     function applyData(data) {
         elVault.textContent = data.vault || "(no vault)";
-        renderStats(data.summary);
-        renderCategories(data.issues);
+        lastIssues  = data.issues || [];
+        lastSummary = data.summary || null;
+        rerender();
     }
 
-    function renderStats(s) {
-        const errCls  = s.errors   > 0 ? "errors"   : "muted";
-        const warnCls = s.warnings > 0 ? "warnings" : "muted";
-        const okBadge = (s.errors === 0 && s.warnings === 0)
+    function rerender() {
+        const visible = lastIssues.filter(it => !hiddenKeys.has(issueKey(it)));
+        renderStats(visible);
+        renderCategories(visible);
+        renderHiddenIndicator();
+    }
+
+    function renderStats(visible) {
+        if (!lastSummary) return;
+        const errors   = visible.reduce((n, i) => n + (i.severity === "error"   ? 1 : 0), 0);
+        const warnings = visible.reduce((n, i) => n + (i.severity === "warning" ? 1 : 0), 0);
+        const errCls  = errors   > 0 ? "errors"   : "muted";
+        const warnCls = warnings > 0 ? "warnings" : "muted";
+        const okBadge = (errors === 0 && warnings === 0 && hiddenKeys.size === 0)
             ? '<span class="ok">clean</span>' : "";
+        const ns = lastSummary.notes_served;
+        const nx = lastSummary.notes_excluded;
         elStats.innerHTML =
             okBadge +
-            '<span class="' + errCls  + '">' + s.errors   + ' error'   + (s.errors   === 1 ? "" : "s") + '</span>' +
-            '<span class="' + warnCls + '">' + s.warnings + ' warning' + (s.warnings === 1 ? "" : "s") + '</span>' +
-            '<span class="muted">' + s.notes_served + ' served'
-                + (s.notes_excluded > 0 ? " / " + s.notes_excluded + " excluded" : "")
-                + '</span>';
+            '<span class="' + errCls  + '">' + errors   + ' error'   + (errors   === 1 ? "" : "s") + '</span>' +
+            '<span class="' + warnCls + '">' + warnings + ' warning' + (warnings === 1 ? "" : "s") + '</span>' +
+            '<span class="muted">' + ns + ' served' + (nx > 0 ? " / " + nx + " excluded" : "") + '</span>';
     }
+
+    function renderHiddenIndicator() {
+        if (hiddenKeys.size > 0) {
+            elHiddenCount.textContent = hiddenKeys.size;
+            elShowHidden.hidden = false;
+        } else {
+            elShowHidden.hidden = true;
+        }
+    }
+
+    elShowHidden.addEventListener("click", () => {
+        hiddenKeys.clear();
+        rerender();
+    });
 
     // The chip text is set only on state transitions (so it does not flicker
      // every second). The tooltip is refreshed on every tick — it is hidden
@@ -399,10 +474,16 @@
         if (!issues || issues.length === 0) {
             // Clean state: hide all categories, show the empty-state message.
             while (elCategories.firstChild) elCategories.removeChild(elCategories.firstChild);
+            const allHidden = hiddenKeys.size > 0 && lastIssues.length > 0;
+            elEmpty.classList.toggle("all-hidden", allHidden);
+            elEmpty.innerHTML = allHidden
+                ? '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i> All issues hidden &mdash; click "show ' + hiddenKeys.size + ' hidden" above to restore.'
+                : '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> No issues &mdash; looking good!';
             elEmpty.classList.add("visible");
             return;
         }
         elEmpty.classList.remove("visible");
+        elEmpty.classList.remove("all-hidden");
 
         // Group issues by category in iteration order (server already sorted
         // them severity-desc, category-asc, ...).
@@ -456,10 +537,24 @@
                 '<i class="' + sevIcon + ' severity-icon" aria-hidden="true"></i>' +
                 '<span class="category-name"></span>' +
                 '<span class="count"></span>' +
+                '<button class="hide-btn hide-category" type="button" ' +
+                        'title="Hide all issues in this category" aria-label="Hide all issues in this category">' +
+                    '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i>' +
+                '</button>' +
             '</h2>' +
             '<ul class="issues"></ul>';
-        sec.querySelector("h2").addEventListener("click", () => {
+        sec.querySelector("h2").addEventListener("click", (ev) => {
+            // Don't collapse when clicking the per-category hide button.
+            if (ev.target.closest(".hide-btn")) return;
             sec.classList.toggle("collapsed");
+        });
+        sec.querySelector(".hide-category").addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const cat = sec.dataset.category;
+            for (const it of lastIssues) {
+                if (it.category === cat) hiddenKeys.add(issueKey(it));
+            }
+            rerender();
         });
         return sec;
     }
@@ -505,8 +600,19 @@
         msg.textContent = it.message || "";
         body.appendChild(path);
         body.appendChild(msg);
+        const hideBtn = document.createElement("button");
+        hideBtn.type = "button";
+        hideBtn.className = "hide-btn hide-issue";
+        hideBtn.title = "Hide this issue for the current session";
+        hideBtn.setAttribute("aria-label", "Hide this issue");
+        hideBtn.innerHTML = '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i>';
+        hideBtn.addEventListener("click", () => {
+            hiddenKeys.add(key);
+            rerender();
+        });
         li.appendChild(dot);
         li.appendChild(body);
+        li.appendChild(hideBtn);
         return li;
     }
 
