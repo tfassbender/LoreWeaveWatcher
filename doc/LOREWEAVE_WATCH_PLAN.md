@@ -49,19 +49,19 @@ Start with (1). Promote to (2) when the drift becomes painful.
 
 **Exit criteria**: `./gradlew shadowJar` produces `build/libs/lore-weave-watch.jar`, `java -jar` runs and prints a help banner.
 
-- [ ] Gradle Kotlin DSL project, Java 21 toolchain, group `com.tfassbender.loreweave.watch`, MIT `LICENSE`.
-- [ ] `com.gradleup.shadow` plugin for fat-jar output.
-- [ ] Dependencies: commonmark-java, snakeyaml-engine, JUnit 5, AssertJ.
-- [ ] Package skeleton: `com.tfassbender.loreweave.watch.{cli, server, ui, parser, graph, domain}`.
-- [ ] `Main` class with a `--help` banner and a `--version` flag. Uses a tiny hand-rolled arg parser (Picocli is fine, but avoidable for this scope).
+- [x] Gradle Kotlin DSL project, Java 21 toolchain, group `com.tfassbender.loreweave.watch`, MIT `LICENSE`.
+- [x] `com.gradleup.shadow` plugin for fat-jar output.
+- [x] Dependencies: commonmark-java, snakeyaml-engine, JUnit 5, AssertJ.
+- [x] Package skeleton: `com.tfassbender.loreweave.watch.{cli, server, ui, parser, graph, domain}`. _(only `cli` materialized so far; remaining packages will be created as phase 2+ adds files.)_
+- [x] `Main` class with a `--help` banner and a `--version` flag. Uses a tiny hand-rolled arg parser (Picocli is fine, but avoidable for this scope).
 
 ## Phase 2 — Vendor parser + graph from LoreWeave
 
 **Exit criteria**: given a single markdown file string, this tool produces exactly the same `Note` + validation issues as the main LoreWeave repo.
 
-- [ ] Copy `domain/`, `parsing/`, and the graph-build classes from LoreWeave. Track the source commit SHA in `COPYING_NOTES.md`.
-- [ ] Re-run the matching unit tests here to confirm behavioral parity (port them alongside the code).
-- [ ] Strip anything git- or Quarkus-related (the `SyncService`, `GitVaultClient`, JAX-RS resources, DTOs, etc. all stay in the main repo).
+- [x] Copy `domain/`, `parsing/`, and the graph-build classes from LoreWeave. Track the source commit SHA in `COPYING_NOTES.md`. _(parsing/ renamed to parser/ per target layout; source commit `1c85eb1f`.)_
+- [x] Re-run the matching unit tests here to confirm behavioral parity (port them alongside the code). _(60 vendored tests + 10 cli tests = 71 passing; fixture vaults copied to `src/test/resources/vault-{valid,invalid}/`.)_
+- [x] Strip anything git- or Quarkus-related (the `SyncService`, `GitVaultClient`, JAX-RS resources, DTOs, etc. all stay in the main repo). _(parser+graph were already framework-free in the source; sync/search/related classes simply not copied — see `COPYING_NOTES.md`.)_
 
 ## Phase 3 — Vault auto-detection
 
