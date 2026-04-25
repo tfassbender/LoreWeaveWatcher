@@ -47,12 +47,14 @@ class ValidationApiTest {
 
     @Test
     void rendersFullDocumentForFixtureVault() {
-        Index index = new IndexBuilder().build(Path.of("src/test/resources/vault-invalid").toAbsolutePath());
+        Path vault = Path.of("src/test/resources/vault-invalid").toAbsolutePath();
+        Index index = new IndexBuilder().build(vault);
         Instant when = Instant.parse("2026-04-25T12:00:00Z");
 
-        String json = ValidationApi.render(index, when);
+        String json = ValidationApi.render(index, when, vault);
 
-        assertThat(json).startsWith("{\"summary\":");
+        assertThat(json).startsWith("{\"vault\":");
+        assertThat(json).contains("\"summary\":");
         assertThat(json).contains("\"errors\":");
         assertThat(json).contains("\"warnings\":");
         assertThat(json).contains("\"notes_served\":");
@@ -60,6 +62,8 @@ class ValidationApiTest {
         assertThat(json).contains("\"issues\":");
         assertThat(json).contains("\"scanned_at\":\"2026-04-25T12:00:00Z\"");
         assertThat(json).contains("\"severity\":\"error\"");
+        // vault path uses forward slashes
+        assertThat(json).doesNotContain("\\\\");
     }
 
     @Test

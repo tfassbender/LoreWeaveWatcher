@@ -4,51 +4,372 @@
     <meta charset="utf-8">
     <title>lore-weave-watch</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; color: #222; }
-        h1 { margin-top: 0; }
-        .summary { font-size: 1.1rem; margin-bottom: 1rem; }
-        .summary span { margin-right: 1rem; }
-        .errors { color: #c0392b; }
-        .warnings { color: #c08020; }
-        .ok { color: #2a7a2a; }
-        .stale { color: #888; font-style: italic; }
-        pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow: auto; }
+        :root {
+            --fg: #1f2328;
+            --fg-muted: #57606a;
+            --bg: #ffffff;
+            --bg-alt: #f6f8fa;
+            --border: #d0d7de;
+            --error: #cf222e;
+            --warning: #bf8700;
+            --ok: #1a7f37;
+            --accent: #0969da;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--fg);
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.25rem;
+            z-index: 10;
+        }
+        .topline {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .topline h1 {
+            font-size: 1rem;
+            margin: 0;
+            font-weight: 600;
+        }
+        .vault-path {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.85rem;
+            color: var(--fg-muted);
+        }
+        .stats {
+            margin-left: auto;
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+        .stats .errors    { color: var(--error);   font-weight: 600; }
+        .stats .warnings  { color: var(--warning); font-weight: 600; }
+        .stats .ok        { color: var(--ok);      font-weight: 600; }
+        .stats .muted     { color: var(--fg-muted); }
+        #scanned {
+            color: var(--fg-muted);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        #banner {
+            display: none;
+            background: #fff8c5;
+            border-bottom: 1px solid #d4a72c;
+            color: #633c01;
+            padding: 0.5rem 1.25rem;
+            font-size: 0.9rem;
+        }
+        #banner.visible { display: block; }
+
+        main { padding: 0.75rem 1.25rem 2rem; }
+
+        section.category {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            background: var(--bg-alt);
+            overflow: hidden;
+        }
+        section.category > h2 {
+            margin: 0;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        section.category > h2 .caret {
+            display: inline-block;
+            transition: transform 0.1s linear;
+            color: var(--fg-muted);
+        }
+        section.category.collapsed > h2 .caret { transform: rotate(-90deg); }
+        section.category.collapsed > ul { display: none; }
+        section.category .category-name { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        section.category .count { color: var(--fg-muted); font-weight: 400; }
+        section.category.error   > h2 { background: #ffebe9; }
+        section.category.warning > h2 { background: #fff8c5; }
+
+        ul.issues {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+        }
+        ul.issues > li {
+            display: grid;
+            grid-template-columns: 1rem 1fr;
+            gap: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        ul.issues > li .dot {
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            margin-top: 0.4rem;
+        }
+        li.error   .dot { background: var(--error); }
+        li.warning .dot { background: var(--warning); }
+        ul.issues .body { min-width: 0; }
+        ul.issues .path {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            color: var(--accent);
+            word-break: break-all;
+        }
+        ul.issues .message {
+            color: var(--fg);
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 0.1rem;
+        }
+
+        #empty {
+            display: none;
+            padding: 2rem;
+            text-align: center;
+            color: var(--ok);
+            font-size: 1.1rem;
+        }
+        #empty.visible { display: block; }
     </style>
 </head>
 <body>
-<h1>lore-weave-watch</h1>
-<div class="summary" id="summary">starting up&hellip;</div>
-<pre id="raw"></pre>
+<header>
+    <div class="topline">
+        <h1>lore-weave-watch</h1>
+        <span class="vault-path" id="vault">&hellip;</span>
+        <div class="stats" id="stats"><span class="muted">connecting&hellip;</span></div>
+    </div>
+    <div id="scanned"></div>
+</header>
+<div id="banner"></div>
+<main>
+    <div id="categories"></div>
+    <div id="empty">No issues &mdash; looking good!</div>
+</main>
 <script>
-    const SUMMARY = document.getElementById("summary");
-    const RAW = document.getElementById("raw");
-    const params = new URLSearchParams(location.search);
-    const interval = parseInt(params.get("interval") || "1000", 10);
+(() => {
+    "use strict";
+
+    const params   = new URLSearchParams(location.search);
+    const interval = Math.max(200, parseInt(params.get("interval") || "1000", 10));
+
+    const elVault     = document.getElementById("vault");
+    const elStats     = document.getElementById("stats");
+    const elScanned   = document.getElementById("scanned");
+    const elBanner    = document.getElementById("banner");
+    const elCategories = document.getElementById("categories");
+    const elEmpty     = document.getElementById("empty");
+
+    let lastScannedAt = null; // ISO string of most recent successful poll
+    let timerHandle   = null;
+
+    // Stable per-issue key. Server already orders issues deterministically, so
+    // string concatenation suffices (no hashing needed).
+    const issueKey = (it) => it.severity + "\0" + it.category + "\0" + it.path + "\0" + it.message;
 
     async function poll() {
         try {
-            const res = await fetch("/api/validation");
+            const res = await fetch("/api/validation", { cache: "no-store" });
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
-            render(data);
-        } catch (e) {
-            SUMMARY.innerHTML = '<span class="stale">server unreachable: ' + e.message + '</span>';
+            applyData(data);
+            setBanner(null);
+        } catch (err) {
+            setBanner("server unreachable: " + err.message);
+        }
+        // Update relative timestamp on every tick, even on failure, so "stale 12s ago"
+        // stays accurate when the server is down.
+        renderScannedAt();
+    }
+
+    function applyData(data) {
+        elVault.textContent = data.vault || "(no vault)";
+        renderStats(data.summary);
+        renderCategories(data.issues);
+        lastScannedAt = data.scanned_at;
+    }
+
+    function renderStats(s) {
+        const errCls  = s.errors   > 0 ? "errors"   : "muted";
+        const warnCls = s.warnings > 0 ? "warnings" : "muted";
+        const okBadge = (s.errors === 0 && s.warnings === 0)
+            ? '<span class="ok">clean</span>' : "";
+        elStats.innerHTML =
+            okBadge +
+            '<span class="' + errCls  + '">' + s.errors   + ' error'   + (s.errors   === 1 ? "" : "s") + '</span>' +
+            '<span class="' + warnCls + '">' + s.warnings + ' warning' + (s.warnings === 1 ? "" : "s") + '</span>' +
+            '<span class="muted">' + s.notes_served + ' served'
+                + (s.notes_excluded > 0 ? " / " + s.notes_excluded + " excluded" : "")
+                + '</span>';
+    }
+
+    function renderScannedAt() {
+        if (!lastScannedAt) { elScanned.textContent = ""; return; }
+        const ts = new Date(lastScannedAt).getTime();
+        const ageSec = Math.max(0, Math.round((Date.now() - ts) / 1000));
+        elScanned.textContent = ageSec < 1 ? "scanned just now" : "scanned " + relativeTime(ageSec) + " ago";
+    }
+
+    function relativeTime(sec) {
+        if (sec < 60)  return sec + " s";
+        if (sec < 3600) return Math.floor(sec / 60) + " m";
+        return Math.floor(sec / 3600) + " h";
+    }
+
+    function setBanner(msg) {
+        if (msg) {
+            elBanner.textContent = msg;
+            elBanner.classList.add("visible");
+        } else {
+            elBanner.classList.remove("visible");
         }
     }
 
-    function render(data) {
-        const s = data.summary;
-        const cls = s.errors > 0 ? "errors" : (s.warnings > 0 ? "warnings" : "ok");
-        SUMMARY.innerHTML =
-            '<span class="' + cls + '">' + s.errors + ' errors / ' + s.warnings + ' warnings</span>' +
-            '<span>' + s.notes_served + ' notes served</span>' +
-            '<span>' + s.notes_excluded + ' excluded</span>' +
-            '<span class="stale">scanned ' + data.scanned_at + '</span>';
-        RAW.textContent = JSON.stringify(data.issues, null, 2);
+    // --- Diff-aware rendering ---------------------------------------------
+    // Each <section.category> represents one category. Each <li[data-key]> is
+    // one issue. We update in place so scroll position and the user's collapse
+    // toggles survive across polls.
+
+    function renderCategories(issues) {
+        if (!issues || issues.length === 0) {
+            // Clean state: hide all categories, show empty banner.
+            while (elCategories.firstChild) elCategories.removeChild(elCategories.firstChild);
+            elEmpty.classList.add("visible");
+            return;
+        }
+        elEmpty.classList.remove("visible");
+
+        // Group issues by category in iteration order (server already sorted
+        // them severity-desc, category-asc, ...).
+        const groups = []; // [{ category, severity, issues: [] }]
+        const groupBy = new Map();
+        for (const it of issues) {
+            let g = groupBy.get(it.category);
+            if (!g) {
+                g = { category: it.category, severity: it.severity, issues: [] };
+                groupBy.set(it.category, g);
+                groups.push(g);
+            }
+            g.issues.push(it);
+        }
+
+        // Build a map of the existing sections keyed by category name.
+        const existing = new Map();
+        for (const sec of Array.from(elCategories.children)) {
+            existing.set(sec.dataset.category, sec);
+        }
+
+        // Walk groups in order, reusing or creating sections.
+        let prev = null;
+        for (const g of groups) {
+            let sec = existing.get(g.category);
+            if (!sec) {
+                sec = makeSection(g);
+            } else {
+                existing.delete(g.category);
+            }
+            updateSection(sec, g);
+            // Place section after `prev` (or at start). Avoid no-op moves.
+            const target = prev ? prev.nextSibling : elCategories.firstChild;
+            if (sec !== target) elCategories.insertBefore(sec, target);
+            prev = sec;
+        }
+        // Remove sections whose categories no longer have issues.
+        for (const sec of existing.values()) sec.remove();
     }
 
+    function makeSection(g) {
+        const sec = document.createElement("section");
+        sec.className = "category " + g.severity;
+        sec.dataset.category = g.category;
+        sec.innerHTML =
+            '<h2>' +
+                '<span class="caret">&#x25BE;</span>' +
+                '<span class="category-name"></span>' +
+                '<span class="count"></span>' +
+            '</h2>' +
+            '<ul class="issues"></ul>';
+        sec.querySelector("h2").addEventListener("click", () => {
+            sec.classList.toggle("collapsed");
+        });
+        return sec;
+    }
+
+    function updateSection(sec, g) {
+        sec.className = "category " + g.severity + (sec.classList.contains("collapsed") ? " collapsed" : "");
+        sec.querySelector(".category-name").textContent = g.category;
+        sec.querySelector(".count").textContent = "(" + g.issues.length + ")";
+
+        const ul = sec.querySelector("ul.issues");
+        const existing = new Map();
+        for (const li of Array.from(ul.children)) existing.set(li.dataset.key, li);
+
+        let prev = null;
+        for (const it of g.issues) {
+            const key = issueKey(it);
+            let li = existing.get(key);
+            if (!li) {
+                li = makeIssue(it, key);
+            } else {
+                existing.delete(key);
+            }
+            const target = prev ? prev.nextSibling : ul.firstChild;
+            if (li !== target) ul.insertBefore(li, target);
+            prev = li;
+        }
+        for (const li of existing.values()) li.remove();
+    }
+
+    function makeIssue(it, key) {
+        const li = document.createElement("li");
+        li.className = it.severity;
+        li.dataset.key = key;
+        const dot = document.createElement("span");
+        dot.className = "dot";
+        const body = document.createElement("div");
+        body.className = "body";
+        const path = document.createElement("div");
+        path.className = "path";
+        path.textContent = it.path || "(no path)";
+        const msg = document.createElement("div");
+        msg.className = "message";
+        msg.textContent = it.message || "";
+        body.appendChild(path);
+        body.appendChild(msg);
+        li.appendChild(dot);
+        li.appendChild(body);
+        return li;
+    }
+
+    // --- Bootstrap ---------------------------------------------------------
     poll();
-    setInterval(poll, interval);
+    timerHandle = setInterval(poll, interval);
+    // Tick the relative timestamp once a second too, even between polls, so
+    // the displayed age advances smoothly.
+    setInterval(renderScannedAt, 1000);
+})();
 </script>
 </body>
 </html>

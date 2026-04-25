@@ -30,7 +30,8 @@ class WatchServerTest {
         assertThat(server.port()).isPositive();
 
         String body = httpGet(server.url().resolve("/api/validation"));
-        assertThat(body).startsWith("{\"summary\":");
+        assertThat(body).startsWith("{\"vault\":");
+        assertThat(body).contains("\"summary\":");
         assertThat(body).contains("\"notes_served\":");
         assertThat(body).contains("\"issues\":[");
         assertThat(body).contains("\"scanned_at\":\"");

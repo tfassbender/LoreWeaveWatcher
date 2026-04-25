@@ -110,7 +110,7 @@ public final class WatchServer {
         }
         idle.recordPoll();
         Index index = builder.build(vault);
-        String body = ValidationApi.render(index, Instant.now());
+        String body = ValidationApi.render(index, Instant.now(), vault);
         send(ex, 200, "application/json; charset=utf-8", body.getBytes(StandardCharsets.UTF_8));
     }
 

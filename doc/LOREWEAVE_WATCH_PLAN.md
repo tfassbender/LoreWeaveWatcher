@@ -103,14 +103,14 @@ Start with (1). Promote to (2) when the drift becomes painful.
 
 **Exit criteria**: page auto-polls `/api/validation`, renders grouped issues, updates without flicker as files change.
 
-- [ ] Single `index.html` with vanilla JS, embedded as a classpath resource.
-- [ ] Layout:
-  - Top bar: vault path, last-scan timestamp (relative: "3 s ago"), `errors: N / warnings: N / notes served: N`.
-  - Collapsible sections per category (errors first, then warnings). Each category expanded by default if it has issues.
-  - Each issue row: severity dot + path + message. Empty state: "No issues — looking good!".
-- [ ] Poll every ~1 s. Configurable via `?interval=<ms>` query param.
-- [ ] Diff-aware rendering: update DOM per-issue rather than full re-render, so scroll position is preserved.
-- [ ] Offline / server-down state: banner at the top, stop polling, don't blow away the last rendered list.
+- [x] Single `index.html` with vanilla JS, embedded as a classpath resource. _(Inline CSS + JS, no external assets; `vault` field added to `/api/validation` JSON so the top bar gets the path without a second endpoint.)_
+- [x] Layout:
+  - Top bar: vault path, last-scan timestamp (relative: "3 s ago"), `errors: N / warnings: N / notes served: N`. _(Sticky header; "scanned just now" / "scanned N s ago" / "N m" / "N h"; ticks once per second between polls.)_
+  - Collapsible sections per category (errors first, then warnings). Each category expanded by default if it has issues. _(Click `<h2>` toggles `.collapsed`.)_
+  - Each issue row: severity dot + path + message. Empty state: "No issues — looking good!". _(Hidden when issues > 0; shown when the issue list is empty.)_
+- [x] Poll every ~1 s. Configurable via `?interval=<ms>` query param. _(Floor of 200 ms.)_
+- [x] Diff-aware rendering: update DOM per-issue rather than full re-render, so scroll position is preserved. _(Stable per-issue keys `severity\0category\0path\0message`; sections + `<li>` reused across polls — verified in Playwright that the original DOM node and a user-collapsed section both survive a poll.)_
+- [x] Offline / server-down state: banner at the top, stop polling, don't blow away the last rendered list. _(Banner shows last fetch error; polling continues at the configured interval so the page recovers automatically when the server is back; rendered list is left untouched.)_
 
 ## Phase 6 — Packaging + launchers
 

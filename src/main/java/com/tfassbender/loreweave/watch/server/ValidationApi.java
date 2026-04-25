@@ -23,8 +23,9 @@ public final class ValidationApi {
 
     private ValidationApi() {}
 
-    public static String render(Index index, Instant scannedAt) {
+    public static String render(Index index, Instant scannedAt, Path vault) {
         Map<String, Object> root = new LinkedHashMap<>();
+        root.put("vault", vault == null ? "" : vault.toString().replace('\\', '/'));
         root.put("summary", summary(index));
         root.put("issues", issues(index.issues()));
         root.put("scanned_at", scannedAt.toString());
