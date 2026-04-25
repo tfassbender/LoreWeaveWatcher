@@ -55,3 +55,7 @@ desktop.ini
 
 # Playwright MCP smoke-test artifacts (page snapshots, console logs)
 .playwright-mcp/
+/ui-*.png
+
+# LoreWeaveTestVault clone for manual testing (created by `gradle cloneTestVault`)
+/test-vault/

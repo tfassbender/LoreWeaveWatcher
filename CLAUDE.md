@@ -33,3 +33,10 @@ Planned: Gradle Kotlin DSL, Java 21 toolchain, `com.gradleup.shadow` for the ube
 - `./gradlew test` → JUnit 5 suite
 - `java -jar build/libs/lore-weave-watch.jar` → watch mode (default port 5717 — the sibling LoreWeave server uses 4717; falls back to OS-picked if bound)
 - `java -jar build/libs/lore-weave-watch.jar check [--json] [--severity=errors|warnings|all] <vault>` → headless mode
+
+## Manual testing against a real vault
+
+`./test-vault/` is a clone of the public [LoreWeaveTestVault](https://github.com/tfassbender/LoreWeaveTestVault), gitignored and not part of the build artifact. Two Gradle tasks manage it:
+
+- `./gradlew cloneTestVault` → fresh clone if missing, fast-forward pull if present
+- `./gradlew installToTestVault` → depends on `shadowJar` + `cloneTestVault`, copies the jar into `test-vault/.loreweave/lore-weave-watch.jar` so vault auto-detection picks the test vault as its root. Launch with `java -jar test-vault/.loreweave/lore-weave-watch.jar`.

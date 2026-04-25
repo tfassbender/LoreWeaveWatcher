@@ -3,8 +3,40 @@
 <head>
     <meta charset="utf-8">
     <title>lore-weave-watch</title>
+    <!--
+      Icons: Font Awesome 6 Free (CC BY 4.0). https://fontawesome.com/license/free
+      Loaded from cdnjs; if offline the icons silently disappear and the rest
+      of the UI keeps working (every icon has accessible text or a tooltip).
+    -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          referrerpolicy="no-referrer">
+    <script>
+        // Pre-flight: apply the persisted theme before paint to avoid a flash.
+        try {
+            if (localStorage.getItem("lww-theme") === "light") {
+                document.documentElement.setAttribute("data-theme", "light");
+            }
+        } catch (e) { /* localStorage may be blocked; default dark is fine */ }
+    </script>
     <style>
+        /* Dark is the default. Add data-theme="light" on <html> to opt in. */
         :root {
+            --fg: #e6edf3;
+            --fg-muted: #8b949e;
+            --bg: #0d1117;
+            --bg-alt: #161b22;
+            --border: #30363d;
+            --error: #f85149;
+            --warning: #d29922;
+            --ok: #3fb950;
+            --accent: #58a6ff;
+            --error-bg: rgba(248, 81, 73, 0.28);
+            --warning-bg: rgba(210, 153, 34, 0.28);
+            --error-border: rgba(248, 81, 73, 0.5);
+            --warning-border: rgba(210, 153, 34, 0.5);
+        }
+        :root[data-theme="light"] {
             --fg: #1f2328;
             --fg-muted: #57606a;
             --bg: #ffffff;
@@ -14,6 +46,10 @@
             --warning: #bf8700;
             --ok: #1a7f37;
             --accent: #0969da;
+            --error-bg: #ffebe9;
+            --warning-bg: #fff8c5;
+            --error-border: #cf222e;
+            --warning-border: #bf8700;
         }
 
         * { box-sizing: border-box; }
@@ -61,21 +97,60 @@
         .stats .warnings  { color: var(--warning); font-weight: 600; }
         .stats .ok        { color: var(--ok);      font-weight: 600; }
         .stats .muted     { color: var(--fg-muted); }
-        #scanned {
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            cursor: default;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .chip::before {
+            content: "";
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .chip.live {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--ok);
+            border-color: rgba(63, 185, 80, 0.35);
+        }
+        .chip.offline {
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--error);
+            border-color: rgba(248, 81, 73, 0.35);
+        }
+        .chip.pending {
+            background: transparent;
             color: var(--fg-muted);
-            font-size: 0.85rem;
-            margin-top: 0.25rem;
+            border-color: var(--border);
         }
 
-        #banner {
-            display: none;
-            background: #fff8c5;
-            border-bottom: 1px solid #d4a72c;
-            color: #633c01;
-            padding: 0.5rem 1.25rem;
-            font-size: 0.9rem;
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--fg-muted);
+            width: 1.85rem;
+            height: 1.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            line-height: 1;
         }
-        #banner.visible { display: block; }
+        .theme-toggle:hover { color: var(--fg); border-color: var(--fg-muted); }
+
+        h1 .title-icon { color: var(--accent); margin-right: 0.35rem; }
 
         main { padding: 0.75rem 1.25rem 2rem; }
 
@@ -86,6 +161,8 @@
             background: var(--bg-alt);
             overflow: hidden;
         }
+        section.category.error   { border-left: 3px solid var(--error-border); }
+        section.category.warning { border-left: 3px solid var(--warning-border); }
         section.category > h2 {
             margin: 0;
             padding: 0.5rem 0.75rem;
@@ -101,13 +178,17 @@
             display: inline-block;
             transition: transform 0.1s linear;
             color: var(--fg-muted);
+            font-size: 0.8em;
         }
         section.category.collapsed > h2 .caret { transform: rotate(-90deg); }
+        section.category > h2 .severity-icon { font-size: 0.95em; }
+        section.category.error   > h2 .severity-icon { color: var(--error); }
+        section.category.warning > h2 .severity-icon { color: var(--warning); }
         section.category.collapsed > ul { display: none; }
         section.category .category-name { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
         section.category .count { color: var(--fg-muted); font-weight: 400; }
-        section.category.error   > h2 { background: #ffebe9; }
-        section.category.warning > h2 { background: #fff8c5; }
+        section.category.error   > h2 { background: var(--error-bg); }
+        section.category.warning > h2 { background: var(--warning-bg); }
 
         ul.issues {
             list-style: none;
@@ -151,22 +232,25 @@
             color: var(--ok);
             font-size: 1.1rem;
         }
+        #empty .fa-circle-check { margin-right: 0.4rem; }
         #empty.visible { display: block; }
     </style>
 </head>
 <body>
 <header>
     <div class="topline">
-        <h1>lore-weave-watch</h1>
+        <h1><i class="fa-solid fa-eye title-icon" aria-hidden="true"></i>lore-weave-watch</h1>
         <span class="vault-path" id="vault">&hellip;</span>
-        <div class="stats" id="stats"><span class="muted">connecting&hellip;</span></div>
+        <span class="chip pending" id="status-chip" role="status" title="Waiting for first response">connecting&hellip;</span>
+        <div class="stats" id="stats"></div>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
+            <i id="theme-icon" class="fa-solid fa-sun" aria-hidden="true"></i>
+        </button>
     </div>
-    <div id="scanned"></div>
 </header>
-<div id="banner"></div>
 <main>
     <div id="categories"></div>
-    <div id="empty">No issues &mdash; looking good!</div>
+    <div id="empty"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> No issues &mdash; looking good!</div>
 </main>
 <script>
 (() => {
@@ -177,12 +261,49 @@
 
     const elVault     = document.getElementById("vault");
     const elStats     = document.getElementById("stats");
-    const elScanned   = document.getElementById("scanned");
-    const elBanner    = document.getElementById("banner");
+    const elStatusChip = document.getElementById("status-chip");
     const elCategories = document.getElementById("categories");
     const elEmpty     = document.getElementById("empty");
+    const elThemeBtn  = document.getElementById("theme-toggle");
+    const elThemeIcon = document.getElementById("theme-icon");
 
-    let lastScannedAt = null; // ISO string of most recent successful poll
+    // Status chip flips from green ("live") to red ("offline") when no
+    // successful poll has landed in this many ms.
+    const OFFLINE_AFTER_MS = 5000;
+
+    // --- Theme -----------------------------------------------------------
+    // Dark is default. Persist explicit choice in localStorage so it follows
+    // the user across reloads. The button label always advertises the OTHER
+    // theme — i.e. "light" when dark is active, "dark" when light is active.
+    function applyTheme(theme) {
+        if (theme === "light") {
+            document.documentElement.setAttribute("data-theme", "light");
+            elThemeIcon.className = "fa-solid fa-moon";
+            elThemeBtn.title = "Switch to dark mode";
+            elThemeBtn.setAttribute("aria-label", "Switch to dark mode");
+        } else {
+            document.documentElement.removeAttribute("data-theme");
+            elThemeIcon.className = "fa-solid fa-sun";
+            elThemeBtn.title = "Switch to light mode";
+            elThemeBtn.setAttribute("aria-label", "Switch to light mode");
+        }
+    }
+    function currentTheme() {
+        return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+    }
+    try { applyTheme(localStorage.getItem("lww-theme") || "dark"); }
+    catch (e) { applyTheme("dark"); }
+    elThemeBtn.addEventListener("click", () => {
+        const next = currentTheme() === "dark" ? "light" : "dark";
+        applyTheme(next);
+        try { localStorage.setItem("lww-theme", next); } catch (e) { /* ignore */ }
+    });
+
+    // Connection state for the status chip. lastSuccessAt tracks the wall-clock
+    // time of the most recent successful poll; lastErrorMsg keeps the most
+    // recent fetch failure so its text can show in the offline tooltip.
+    let lastSuccessAt = null;
+    let lastErrorMsg  = null;
     let timerHandle   = null;
 
     // Stable per-issue key. Server already orders issues deterministically, so
@@ -195,20 +316,18 @@
             if (!res.ok) throw new Error("HTTP " + res.status);
             const data = await res.json();
             applyData(data);
-            setBanner(null);
+            lastSuccessAt = Date.now();
+            lastErrorMsg  = null;
         } catch (err) {
-            setBanner("server unreachable: " + err.message);
+            lastErrorMsg = err.message || String(err);
         }
-        // Update relative timestamp on every tick, even on failure, so "stale 12s ago"
-        // stays accurate when the server is down.
-        renderScannedAt();
+        updateStatusChip();
     }
 
     function applyData(data) {
         elVault.textContent = data.vault || "(no vault)";
         renderStats(data.summary);
         renderCategories(data.issues);
-        lastScannedAt = data.scanned_at;
     }
 
     function renderStats(s) {
@@ -225,26 +344,50 @@
                 + '</span>';
     }
 
-    function renderScannedAt() {
-        if (!lastScannedAt) { elScanned.textContent = ""; return; }
-        const ts = new Date(lastScannedAt).getTime();
-        const ageSec = Math.max(0, Math.round((Date.now() - ts) / 1000));
-        elScanned.textContent = ageSec < 1 ? "scanned just now" : "scanned " + relativeTime(ageSec) + " ago";
-    }
+    // The chip text is set only on state transitions (so it does not flicker
+     // every second). The tooltip is refreshed on every tick — it is hidden
+     // until the user hovers, so it can update freely without visible churn.
+    function updateStatusChip() {
+        const now = Date.now();
+        const ageMs = lastSuccessAt == null ? Infinity : now - lastSuccessAt;
+        const live = ageMs < OFFLINE_AFTER_MS;
 
-    function relativeTime(sec) {
-        if (sec < 60)  return sec + " s";
-        if (sec < 3600) return Math.floor(sec / 60) + " m";
-        return Math.floor(sec / 3600) + " h";
-    }
-
-    function setBanner(msg) {
-        if (msg) {
-            elBanner.textContent = msg;
-            elBanner.classList.add("visible");
+        let nextClass, nextText, tooltip;
+        if (lastSuccessAt == null && lastErrorMsg == null) {
+            nextClass = "pending";
+            nextText  = "connecting…";
+            tooltip   = "Waiting for first response";
+        } else if (live) {
+            nextClass = "live";
+            nextText  = "live";
+            tooltip   = "Connected to lore-weave-watch (last response less than "
+                + Math.ceil(OFFLINE_AFTER_MS / 1000) + " s ago)";
         } else {
-            elBanner.classList.remove("visible");
+            nextClass = "offline";
+            nextText  = "offline";
+            const seenPart = lastSuccessAt == null
+                ? "no successful response yet"
+                : "last response " + relativeAge(ageMs);
+            const errPart = lastErrorMsg ? "; " + lastErrorMsg : "";
+            tooltip = "Server unreachable" + errPart + " (" + seenPart + ")";
         }
+
+        if (!elStatusChip.classList.contains(nextClass)) {
+            elStatusChip.classList.remove("pending", "live", "offline");
+            elStatusChip.classList.add(nextClass);
+        }
+        if (elStatusChip.textContent !== nextText) {
+            elStatusChip.textContent = nextText;
+        }
+        elStatusChip.title = tooltip;
+    }
+
+    function relativeAge(ms) {
+        const sec = Math.max(0, Math.round(ms / 1000));
+        if (sec < 1)    return "just now";
+        if (sec < 60)   return sec + " s ago";
+        if (sec < 3600) return Math.floor(sec / 60) + " m ago";
+        return Math.floor(sec / 3600) + " h ago";
     }
 
     // --- Diff-aware rendering ---------------------------------------------
@@ -254,7 +397,7 @@
 
     function renderCategories(issues) {
         if (!issues || issues.length === 0) {
-            // Clean state: hide all categories, show empty banner.
+            // Clean state: hide all categories, show the empty-state message.
             while (elCategories.firstChild) elCategories.removeChild(elCategories.firstChild);
             elEmpty.classList.add("visible");
             return;
@@ -304,9 +447,13 @@
         const sec = document.createElement("section");
         sec.className = "category " + g.severity;
         sec.dataset.category = g.category;
+        const sevIcon = g.severity === "error"
+            ? "fa-solid fa-triangle-exclamation"
+            : "fa-solid fa-circle-exclamation";
         sec.innerHTML =
             '<h2>' +
-                '<span class="caret">&#x25BE;</span>' +
+                '<i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>' +
+                '<i class="' + sevIcon + ' severity-icon" aria-hidden="true"></i>' +
                 '<span class="category-name"></span>' +
                 '<span class="count"></span>' +
             '</h2>' +
@@ -366,9 +513,10 @@
     // --- Bootstrap ---------------------------------------------------------
     poll();
     timerHandle = setInterval(poll, interval);
-    // Tick the relative timestamp once a second too, even between polls, so
-    // the displayed age advances smoothly.
-    setInterval(renderScannedAt, 1000);
+    // The chip flips green→red when the last success crosses OFFLINE_AFTER_MS,
+    // and the tooltip's "X s ago" text needs to advance between polls. A 1 s
+    // tick is plenty — chip text only changes on state transitions.
+    setInterval(updateStatusChip, 1000);
 })();
 </script>
 </body>

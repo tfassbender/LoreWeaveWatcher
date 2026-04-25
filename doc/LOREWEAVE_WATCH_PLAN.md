@@ -121,7 +121,7 @@ Start with (1). Promote to (2) when the drift becomes painful.
   - `lore-weave-watch.bat` (Windows).
   - `lore-weave-watch.sh` (Unix, chmod +x).
 - [ ] Browser auto-launch is already wired in phase 4; this phase just confirms it works from the launcher scripts on Windows + Linux.
-- [ ] README covers: place the jar under `<vault>/.loreweave/`, run the launcher, note that `.loreweave/` is ignored by Obsidian by default (or add it to the user's Obsidian "Excluded files" if they've changed defaults).
+- [ ] README covers: place the jar under `<vault>/.loreweave/`, run the launcher, note that `.loreweave/` is ignored by Obsidian by default (or add it to the user's Obsidian "Excluded files" if they've changed defaults). Also document the manual-testing Gradle tasks `cloneTestVault` and `installToTestVault` (which check out [LoreWeaveTestVault](https://github.com/tfassbender/LoreWeaveTestVault) into `./test-vault/` and copy the shadow jar into `test-vault/.loreweave/`).
 
 ## Phase 7 — Tests
 
