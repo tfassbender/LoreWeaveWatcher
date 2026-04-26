@@ -69,9 +69,23 @@ public final class IndexBuilder {
         allIssues.addAll(scan.issues());
 
         // Parse every file. Track which ones succeed.
+        // Any unexpected throwable from the assembler is caught and surfaced as a
+        // PARSE_ERRORS issue so a single malformed file cannot crash a vault scan
+        // — the dashboard then reports it instead of the server going dark.
         List<Parsed> served = new ArrayList<>();
         for (VaultScanner.ScannedFile file : scan.files()) {
-            ParseResult result = assembler.assemble(file.relativePath(), file.content());
+            ParseResult result;
+            try {
+                result = assembler.assemble(file.relativePath(), file.content());
+            } catch (RuntimeException ex) {
+                ValidationIssue issue = ValidationIssue.error(
+                        ValidationCategory.PARSE_ERRORS, file.relativePath(),
+                        "internal parser error: " + ex.getClass().getSimpleName()
+                                + (ex.getMessage() == null ? "" : ": " + ex.getMessage()));
+                reportBuilder.add(issue);
+                allIssues.add(issue);
+                continue;
+            }
             reportBuilder.addAll(result.issues());
             allIssues.addAll(result.issues());
             if (result instanceof ParseResult.Success s) {

@@ -102,6 +102,59 @@ class NoteAssemblerTest {
     }
 
     @Test
+    void emptyTemplateWithNullValuedMetadataDoesNotCrash() {
+        // Mirrors test-vault/_templates/character.md: every field is present but
+        // empty, so YAML loads them as null. Map.copyOf would NPE here — the
+        // assembler must instead produce a Success (or warning-bearing result)
+        // so the scan can keep going and the issue surfaces in the UI.
+        String raw = """
+                ---
+                type: character
+                title:
+                summary:
+                schema_version: 1
+                aliases: []
+                metadata:
+                  faction:
+                  role:
+                ---
+                Short narrative description.
+
+                #character
+                """;
+        ParseResult result = assembler.assemble(file, raw);
+        assertThat(result).isInstanceOf(ParseResult.Success.class);
+        var success = (ParseResult.Success) result;
+        // Empty title and summary surface as warnings, not errors.
+        assertThat(success.issues()).extracting(ValidationIssue::category)
+                .contains(ValidationCategory.MISSING_TITLE, ValidationCategory.MISSING_SUMMARY);
+        // Null-valued metadata entries are preserved (null is a valid YAML value).
+        assertThat(success.note().metadata()).containsKeys("faction", "role");
+        assertThat(success.note().metadata().get("faction")).isNull();
+        assertThat(success.note().metadata().get("role")).isNull();
+    }
+
+    @Test
+    void aliasesListWithNullEntryDoesNotCrash() {
+        // YAML `aliases: [, Foo]` yields a list whose first element is null.
+        // List.copyOf would NPE; the assembler must tolerate it.
+        String raw = """
+                ---
+                type: character
+                title: K
+                summary: s
+                schema_version: 1
+                aliases:
+                  -
+                  - Foo
+                ---
+                Body.
+                """;
+        ParseResult result = assembler.assemble(file, raw);
+        assertThat(result).isInstanceOf(ParseResult.Success.class);
+    }
+
+    @Test
     void keyIsDerivedFromSourcePathAndPortableAcrossSeparators() {
         String raw = """
                 ---

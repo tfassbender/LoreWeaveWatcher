@@ -16,7 +16,7 @@ import java.util.Map;
  * resolution to target notes happens in the index builder, which has the
  * global vault context this class intentionally doesn't.
  */
-public final class NoteAssembler {
+public class NoteAssembler {
 
     private final FrontmatterParser frontmatterParser;
     private final MarkdownBodyParser bodyParser;

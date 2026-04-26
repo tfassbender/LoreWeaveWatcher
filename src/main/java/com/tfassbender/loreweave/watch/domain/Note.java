@@ -1,6 +1,9 @@
 package com.tfassbender.loreweave.watch.domain;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,10 +29,14 @@ public record Note(
         Path sourcePath) {
 
     public Note {
-        aliases = aliases == null ? List.of() : List.copyOf(aliases);
-        metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
-        links = links == null ? List.of() : List.copyOf(links);
-        tags = tags == null ? List.of() : List.copyOf(tags);
+        // Use null-tolerant defensive copies. YAML frontmatter routinely produces
+        // null values (e.g. an empty `metadata: { faction: , role: }` from an
+        // unfilled template), and List.copyOf / Map.copyOf reject nulls — so the
+        // hardened JDK collections would crash a scan on otherwise-fine notes.
+        aliases = aliases == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(aliases));
+        metadata = metadata == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
+        links = links == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(links));
+        tags = tags == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(tags));
     }
 
     /** The normalized lookup handle for this note (vault-relative path, lowercased, forward-slash, {@code .md}-stripped). */

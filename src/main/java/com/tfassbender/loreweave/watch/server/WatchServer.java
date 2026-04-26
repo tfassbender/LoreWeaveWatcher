@@ -134,9 +134,18 @@ public final class WatchServer {
         if (!"GET".equals(ex.getRequestMethod())) { sendMethodNotAllowed(ex); return; }
         idle.recordPoll();
         Predicate<String> exclude = IgnoreMatcher.from(liveConfig.get().ignorePaths());
-        Index index = builder.build(vault, exclude);
-        String body = ValidationApi.render(index, Instant.now(), vault);
-        sendJson(ex, 200, body);
+        try {
+            Index index = builder.build(vault, exclude);
+            String body = ValidationApi.render(index, Instant.now(), vault);
+            sendJson(ex, 200, body);
+        } catch (RuntimeException e) {
+            // Last-resort safety net: per-file failures already surface as
+            // PARSE_ERRORS issues inside the index, so reaching this branch means
+            // something truly unexpected blew up. Return a structured 500 so the
+            // dashboard can show the failure instead of going dark.
+            sendJson(ex, 500, errorJson("scan failed: " + e.getClass().getSimpleName()
+                    + (e.getMessage() == null ? "" : ": " + e.getMessage())));
+        }
     }
 
     private void handleConfig(HttpExchange ex) throws IOException {
