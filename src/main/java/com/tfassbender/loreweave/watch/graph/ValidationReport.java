@@ -37,7 +37,16 @@ public record ValidationReport(Map<ValidationCategory, CategoryStats> byCategory
     public int totalWarnings() {
         int total = 0;
         for (var e : byCategory.entrySet()) {
-            if (!e.getKey().isError()) total += e.getValue().count();
+            if (e.getKey().isWarning()) total += e.getValue().count();
+        }
+        return total;
+    }
+
+    /** Watcher divergence: count of informational issues (e.g. {@code #todo} tags). */
+    public int totalInfos() {
+        int total = 0;
+        for (var e : byCategory.entrySet()) {
+            if (e.getKey().isInfo()) total += e.getValue().count();
         }
         return total;
     }

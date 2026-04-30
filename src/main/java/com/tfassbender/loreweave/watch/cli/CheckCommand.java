@@ -65,8 +65,10 @@ public final class CheckCommand {
         // - --severity=errors AND only warnings exist => 0 (user asked to ignore them)
         // - warnings only => 1
         // - clean => 0
+        // Info-severity issues (#todo tags) never affect the exit code — they
+        // are notices, not failures.
         boolean hasError = all.stream().anyMatch(ValidationIssue::isError);
-        boolean hasWarning = all.stream().anyMatch(i -> !i.isError());
+        boolean hasWarning = all.stream().anyMatch(ValidationIssue::isWarning);
         if (hasError) return 2;
         if (hasWarning && sev != Args.Severity.ERRORS) return 1;
         return 0;
@@ -83,6 +85,7 @@ public final class CheckCommand {
     private static void printHuman(PrintStream out, Path vault, Index index, List<ValidationIssue> filtered) {
         int errors = index.report().totalErrors();
         int warnings = index.report().totalWarnings();
+        int todos = index.report().totalInfos();
         int served = index.size();
         int excluded = index.notesExcluded();
 
@@ -90,7 +93,8 @@ public final class CheckCommand {
         out.println(served + " notes served"
                 + (excluded > 0 ? " / " + excluded + " excluded" : "")
                 + ", " + errors + " error" + (errors == 1 ? "" : "s")
-                + ", " + warnings + " warning" + (warnings == 1 ? "" : "s"));
+                + ", " + warnings + " warning" + (warnings == 1 ? "" : "s")
+                + ", " + todos + " todo" + (todos == 1 ? "" : "s"));
 
         if (filtered.isEmpty()) {
             out.println("no issues to report.");
@@ -99,7 +103,7 @@ public final class CheckCommand {
 
         // Group by (severity desc, category asc) to match the dashboard's order.
         Comparator<ValidationIssue> order = Comparator
-                .<ValidationIssue, Integer>comparing(i -> i.isError() ? 0 : 1)
+                .<ValidationIssue, Integer>comparing(CheckCommand::severityRank)
                 .thenComparing(i -> i.category().name())
                 .thenComparing(i -> normalize(i.filePath()))
                 .thenComparing(ValidationIssue::message);
@@ -107,18 +111,26 @@ public final class CheckCommand {
         sorted.sort(order);
 
         ValidationCategory currentCat = null;
-        boolean currentError = false;
+        ValidationCategory.Severity currentSeverity = null;
         for (ValidationIssue issue : sorted) {
-            if (issue.category() != currentCat || issue.isError() != currentError) {
+            if (issue.category() != currentCat || issue.severity() != currentSeverity) {
                 out.println();
-                out.println("[" + (issue.isError() ? "error" : "warning") + "] "
+                out.println("[" + issue.severity().name().toLowerCase(Locale.ROOT) + "] "
                         + issue.category().name().toLowerCase(Locale.ROOT));
                 currentCat = issue.category();
-                currentError = issue.isError();
+                currentSeverity = issue.severity();
             }
             String firstLine = singleLine(issue.message());
             out.println("  " + normalize(issue.filePath()) + " : " + firstLine);
         }
+    }
+
+    private static int severityRank(ValidationIssue i) {
+        return switch (i.severity()) {
+            case ERROR   -> 0;
+            case WARNING -> 1;
+            case INFO    -> 2;
+        };
     }
 
     private static String normalize(Path p) {

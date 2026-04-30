@@ -95,6 +95,47 @@ class IndexBuilderTest {
     }
 
     @Test
+    void todoTagsSurfaceAsInfoIssues() {
+        Index index = builder.build(Path.of("src/test/resources/vault-invalid").toAbsolutePath());
+
+        // todos.md: #todo, #todo/cleanup, #todo/refactor-link-resolver. The
+        // duplicate #todo is deduped by the hashtag extractor, so we expect 3
+        // info issues on todos.md (not 4).
+        var todos = index.issues().stream()
+                .filter(i -> i.category() == ValidationCategory.TODO_TAGS)
+                .filter(i -> i.filePath().toString().replace('\\', '/').equals("todos.md"))
+                .toList();
+        assertThat(todos).extracting(ValidationIssue::message)
+                .containsExactlyInAnyOrder("#todo", "#todo/cleanup", "#todo/refactor-link-resolver");
+        assertThat(todos).allMatch(ValidationIssue::isInfo);
+
+        // Info issues count separately and never become errors/warnings.
+        assertThat(index.report().totalInfos()).isGreaterThanOrEqualTo(3);
+        assertThat(index.report().stats(ValidationCategory.TODO_TAGS).count()).isGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    void todoIssuesDoNotAffectExitCodeOnAnOtherwiseCleanVault(@TempDir Path vault) throws Exception {
+        // A vault that is structurally clean but contains #todo tags should not
+        // flip the check command to "warnings" — todos are notices, not failures.
+        Files.writeString(vault.resolve("ok.md"), """
+                ---
+                type: character
+                title: Ok
+                summary: ok
+                schema_version: 1
+                ---
+                Body with #todo/cleanup that should not fail validation.
+                """);
+
+        Index index = builder.build(vault);
+
+        assertThat(index.report().totalErrors()).isZero();
+        assertThat(index.report().totalWarnings()).isZero();
+        assertThat(index.report().totalInfos()).isEqualTo(1);
+    }
+
+    @Test
     void duplicateUnresolvedLinkInSameNoteSurfacesTwice() {
         // Regression guard: the watcher UI's diff-aware renderer keys <li>s by
         // (severity, category, path, message). When a note mentions the same

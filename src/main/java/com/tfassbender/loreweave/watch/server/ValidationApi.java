@@ -36,6 +36,7 @@ public final class ValidationApi {
         Map<String, Object> s = new LinkedHashMap<>();
         s.put("errors", index.report().totalErrors());
         s.put("warnings", index.report().totalWarnings());
+        s.put("todos", index.report().totalInfos());
         s.put("notes_served", index.size());
         s.put("notes_excluded", index.notesExcluded());
         return s;
@@ -48,7 +49,7 @@ public final class ValidationApi {
         for (ValidationIssue i : sorted) {
             Map<String, Object> e = new LinkedHashMap<>();
             e.put("category", categoryName(i.category()));
-            e.put("severity", i.isError() ? "error" : "warning");
+            e.put("severity", severityName(i.severity()));
             e.put("path", normalizePath(i.filePath()));
             e.put("message", i.message());
             out.add(e);
@@ -58,6 +59,18 @@ public final class ValidationApi {
 
     static String categoryName(ValidationCategory c) {
         return c.name().toLowerCase(Locale.ROOT);
+    }
+
+    static String severityName(ValidationCategory.Severity s) {
+        return s.name().toLowerCase(Locale.ROOT);
+    }
+
+    private static int severityRank(ValidationIssue i) {
+        return switch (i.severity()) {
+            case ERROR   -> 0;
+            case WARNING -> 1;
+            case INFO    -> 2;
+        };
     }
 
     private static String normalizePath(Path p) {
@@ -70,7 +83,7 @@ public final class ValidationApi {
      * warnings; ties broken by category name, then path, then message.
      */
     static final Comparator<ValidationIssue> ISSUE_ORDER = Comparator
-            .<ValidationIssue, Integer>comparing(i -> i.isError() ? 0 : 1)
+            .<ValidationIssue, Integer>comparing(ValidationApi::severityRank)
             .thenComparing(i -> categoryName(i.category()))
             .thenComparing(i -> normalizePath(i.filePath()))
             .thenComparing(ValidationIssue::message);

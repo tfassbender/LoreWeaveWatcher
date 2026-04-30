@@ -100,6 +100,22 @@ public final class IndexBuilder {
         }
         LinkResolver resolver = resolverBuilder.build();
 
+        // Watcher divergence: scan each served note's tags for #todo / #todo/...
+        // and emit one info-severity issue per occurrence so the dashboard can
+        // surface them as a checklist. Tags are already lowercased and dedup'd
+        // by HashtagExtractor, so we get one issue per unique todo per note.
+        for (Parsed p : served) {
+            for (String tag : p.note.tags()) {
+                if (tag.equals("todo") || tag.startsWith("todo/")) {
+                    ValidationIssue issue = ValidationIssue.info(
+                            ValidationCategory.TODO_TAGS, p.file.relativePath(),
+                            "#" + tag);
+                    reportBuilder.add(issue);
+                    allIssues.add(issue);
+                }
+            }
+        }
+
         // Resolve forward links for each served note.
         Map<String, List<ResolvedLink>> resolvedByKey = new HashMap<>();
         Map<String, List<Backlink>> backlinksByTarget = new HashMap<>();
