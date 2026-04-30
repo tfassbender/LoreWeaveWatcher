@@ -856,23 +856,34 @@
         sec.querySelector(".count").textContent = "(" + g.issues.length + ")";
 
         const ul = sec.querySelector("ul.issues");
+        // Bucket existing <li>s by data-key. Multiple issues can legitimately
+        // share a key (e.g. the same [[broken-link]] written twice in one
+        // note), so we must keep ALL of them — collapsing on key would orphan
+        // the extras in the DOM and leak one new <li> per duplicate per poll.
         const existing = new Map();
-        for (const li of Array.from(ul.children)) existing.set(li.dataset.key, li);
+        for (const li of Array.from(ul.children)) {
+            let bucket = existing.get(li.dataset.key);
+            if (!bucket) { bucket = []; existing.set(li.dataset.key, bucket); }
+            bucket.push(li);
+        }
 
         let prev = null;
         for (const it of g.issues) {
             const key = issueKey(it);
-            let li = existing.get(key);
-            if (!li) {
-                li = makeIssue(it, key);
+            const bucket = existing.get(key);
+            let li;
+            if (bucket && bucket.length > 0) {
+                li = bucket.shift();
             } else {
-                existing.delete(key);
+                li = makeIssue(it, key);
             }
             const target = prev ? prev.nextSibling : ul.firstChild;
             if (li !== target) ul.insertBefore(li, target);
             prev = li;
         }
-        for (const li of existing.values()) li.remove();
+        for (const bucket of existing.values()) {
+            for (const li of bucket) li.remove();
+        }
     }
 
     function makeIssue(it, key) {

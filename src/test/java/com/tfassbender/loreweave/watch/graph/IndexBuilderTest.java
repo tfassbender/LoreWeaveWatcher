@@ -95,6 +95,23 @@ class IndexBuilderTest {
     }
 
     @Test
+    void duplicateUnresolvedLinkInSameNoteSurfacesTwice() {
+        // Regression guard: the watcher UI's diff-aware renderer keys <li>s by
+        // (severity, category, path, message). When a note mentions the same
+        // broken [[target]] twice, IndexBuilder must report it twice — the UI
+        // depends on that to exercise its duplicate-key bucketing. Collapsing
+        // duplicates here would mask UI regressions like the row-growth bug.
+        Index index = builder.build(Path.of("src/test/resources/vault-invalid").toAbsolutePath());
+
+        long unresolvedDoesNotExistOnUnresolvedNote = index.issues().stream()
+                .filter(i -> i.category() == ValidationCategory.UNRESOLVED_LINKS)
+                .filter(i -> i.filePath().toString().replace('\\', '/').equals("unresolved.md"))
+                .filter(i -> i.message().contains("[[DoesNotExist]]"))
+                .count();
+        assertThat(unresolvedDoesNotExistOnUnresolvedNote).isEqualTo(2);
+    }
+
+    @Test
     void sampleCapsAtFiveButCountKeepsGoing() {
         ValidationReport.Builder rb = new ValidationReport.Builder();
         for (int i = 0; i < 7; i++) {
